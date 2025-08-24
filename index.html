@@ -1,1632 +1,679 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UniProject - Professional Gantt Chart Manager</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1e40af;
-            --secondary: #64748b;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --bg-primary: #ffffff;
-            --bg-secondary: #f8fafc;
-            --bg-tertiary: #e2e8f0;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --border: #e2e8f0;
-            --critical-path: #ef4444;
-            --normal-path: #3b82f6;
-            --milestone: #f59e0b;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* Header */
-        .header {
-            background: var(--bg-primary);
-            border-bottom: 1px solid var(--border);
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .logo svg {
-            width: 28px;
-            height: 28px;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        /* Toolbar */
-        .toolbar {
-            background: var(--bg-primary);
-            border-bottom: 1px solid var(--border);
-            padding: 10px 20px;
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .toolbar-group {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            padding-right: 20px;
-            border-right: 1px solid var(--border);
-        }
-
-        .toolbar-group:last-child {
-            border-right: none;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 6px 12px;
-            border: 1px solid var(--border);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-        }
-
-        .btn:hover {
-            background: var(--bg-secondary);
-            transform: translateY(-1px);
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: white;
-            border-color: var(--success);
-        }
-
-        .btn-icon {
-            padding: 6px;
-            width: 32px;
-            height: 32px;
-            justify-content: center;
-        }
-
-        /* Main Layout */
-        .main-container {
-            display: flex;
-            height: calc(100vh - 120px);
-            background: var(--bg-primary);
-        }
-
-        /* Task Panel */
-        .task-panel {
-            width: 50%;
-            min-width: 500px;
-            border-right: 2px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            background: white;
-        }
-
-        .task-header {
-            display: grid;
-            grid-template-columns: 30px 40px 2fr 100px 120px 120px 100px;
-            gap: 10px;
-            padding: 10px 15px;
-            background: var(--bg-secondary);
-            border-bottom: 2px solid var(--border);
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-        }
-
-        .task-list {
-            flex: 1;
-            overflow-y: auto;
-            background: white;
-        }
-
-        .task-row {
-            display: grid;
-            grid-template-columns: 30px 40px 2fr 100px 120px 120px 100px;
-            gap: 10px;
-            padding: 8px 15px;
-            border-bottom: 1px solid var(--border);
-            align-items: center;
-            transition: background 0.2s;
-            position: relative;
-        }
-
-        .task-row:hover {
-            background: var(--bg-secondary);
-        }
-
-        .task-row.selected {
-            background: #dbeafe;
-        }
-
-        .task-row.summary {
-            font-weight: 600;
-            background: #f8fafc;
-        }
-
-        .task-id {
-            color: var(--text-secondary);
-            font-size: 12px;
-            text-align: center;
-        }
-
-        .task-wbs {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .task-name {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .task-name input {
-            flex: 1;
-            padding: 4px 8px;
-            border: 1px solid transparent;
-            background: transparent;
-            border-radius: 4px;
-            font-size: 13px;
-        }
-
-        .task-name input:focus {
-            border-color: var(--primary);
-            background: white;
-            outline: none;
-        }
-
-        .indent-spacer {
-            width: 20px;
-            display: inline-block;
-        }
-
-        .expand-icon {
-            cursor: pointer;
-            color: var(--text-secondary);
-            transition: transform 0.2s;
-        }
-
-        .expand-icon.collapsed {
-            transform: rotate(-90deg);
-        }
-
-        .task-duration input,
-        .task-start input,
-        .task-finish input,
-        .task-predecessor input {
-            width: 100%;
-            padding: 4px 8px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            font-size: 12px;
-            background: white;
-        }
-
-        .task-duration input:focus,
-        .task-start input:focus,
-        .task-finish input:focus,
-        .task-predecessor input:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
-
-        /* Gantt Chart */
-        .gantt-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .gantt-header {
-            background: var(--bg-secondary);
-            border-bottom: 2px solid var(--border);
-            height: 52px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .gantt-timeline {
-            display: flex;
-            height: 100%;
-            position: relative;
-        }
-
-        .month-header {
-            display: flex;
-            height: 50%;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        .month-cell {
-            border-right: 1px solid var(--border);
-            padding: 2px 8px;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-        }
-
-        .day-header {
-            display: flex;
-            height: 50%;
-            position: absolute;
-            bottom: 0;
-            left: 0;
-        }
-
-        .day-cell {
-            width: 30px;
-            border-right: 1px solid var(--bg-tertiary);
-            text-align: center;
-            font-size: 10px;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .weekend {
-            background: var(--bg-tertiary);
-        }
-
-        .gantt-body {
-            flex: 1;
-            overflow: auto;
-            position: relative;
-            background: white;
-        }
-
-        .gantt-rows {
-            position: relative;
-        }
-
-        .gantt-row {
-            height: 37px;
-            border-bottom: 1px solid var(--border);
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .gantt-row.summary {
-            background: #f8fafc;
-        }
-
-        .gantt-grid {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-        }
-
-        .grid-column {
-            width: 30px;
-            border-right: 1px solid var(--bg-tertiary);
-            height: 100%;
-        }
-
-        .grid-column.weekend {
-            background: var(--bg-tertiary);
-            opacity: 0.3;
-        }
-
-        .gantt-bar {
-            position: absolute;
-            height: 20px;
-            background: var(--normal-path);
-            border-radius: 4px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: move;
-            display: flex;
-            align-items: center;
-            padding: 0 4px;
-            font-size: 10px;
-            color: white;
-            font-weight: 500;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            transition: all 0.2s;
-            z-index: 10;
-        }
-
-        .gantt-bar:hover {
-            transform: translateY(-50%) scale(1.02);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            z-index: 20;
-        }
-
-        .gantt-bar.critical {
-            background: var(--critical-path);
-        }
-
-        .gantt-bar.summary {
-            background: var(--text-primary);
-            height: 8px;
-            border-radius: 0;
-            cursor: default;
-        }
-
-        .gantt-bar.milestone {
-            width: 16px !important;
-            height: 16px;
-            background: var(--milestone);
-            transform: translateY(-50%) rotate(45deg);
-            padding: 0;
-        }
-
-        .gantt-link {
-            position: absolute;
-            z-index: 5;
-        }
-
-        .gantt-link path {
-            stroke: var(--text-secondary);
-            stroke-width: 2;
-            fill: none;
-        }
-
-        .gantt-link.critical path {
-            stroke: var(--critical-path);
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-
-        .modal-header {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: var(--text-primary);
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-secondary);
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 24px;
-        }
-
-        /* Status Bar */
-        .status-bar {
-            background: var(--bg-primary);
-            border-top: 1px solid var(--border);
-            padding: 8px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .status-left {
-            display: flex;
-            gap: 20px;
-        }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-        }
-
-        .status-indicator.critical {
-            background: var(--critical-path);
-        }
-
-        .status-indicator.normal {
-            background: var(--normal-path);
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <div class="header">
-        <div class="logo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            UniProject - Gantt Chart Manager
-        </div>
-        <div class="header-actions">
-            <button class="btn" onclick="saveProject()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
-                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                    <polyline points="7 3 7 8 15 8"></polyline>
-                </svg>
-                Save
-            </button>
-            <button class="btn" onclick="loadProject()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                </svg>
-                Open
-            </button>
-            <button class="btn btn-primary" onclick="showNewProjectModal()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                New Project
-            </button>
-        </div>
-    </div>
-
-    <!-- Toolbar -->
-    <div class="toolbar">
-        <div class="toolbar-group">
-            <button class="btn btn-icon" onclick="addTask()" title="Add Task">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-            </button>
-            <button class="btn btn-icon" onclick="deleteTask()" title="Delete Task">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
-                </svg>
-            </button>
-        </div>
-        <div class="toolbar-group">
-            <button class="btn btn-icon" onclick="indentTask()" title="Indent">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 12 9 12 9 8 15 13 9 18 9 14 3 14"></polyline>
-                </svg>
-            </button>
-            <button class="btn btn-icon" onclick="outdentTask()" title="Outdent">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="15 12 9 12 9 8 3 13 9 18 9 14 15 14"></polyline>
-                </svg>
-            </button>
-        </div>
-        <div class="toolbar-group">
-            <button class="btn" onclick="zoomIn()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
-                    <line x1="11" y1="8" x2="11" y2="14"></line>
-                    <line x1="8" y1="11" x2="14" y2="11"></line>
-                </svg>
-                Zoom In
-            </button>
-            <button class="btn" onclick="zoomOut()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
-                    <line x1="8" y1="11" x2="14" y2="11"></line>
-                </svg>
-                Zoom Out
-            </button>
-        </div>
-        <div class="toolbar-group">
-            <button class="btn" onclick="addMilestone()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                </svg>
-                Add Milestone
-            </button>
-        </div>
-    </div>
-
-    <!-- Main Container -->
-    <div class="main-container">
-        <!-- Task Panel -->
-        <div class="task-panel">
-            <div class="task-header">
-                <div>#</div>
-                <div>WBS</div>
-                <div>Task Name</div>
-                <div>Duration</div>
-                <div>Start</div>
-                <div>Finish</div>
-                <div>Predecessor</div>
-            </div>
-            <div class="task-list" id="taskList"></div>
-        </div>
-
-        <!-- Gantt Panel -->
-        <div class="gantt-panel">
-            <div class="gantt-header" id="ganttHeader"></div>
-            <div class="gantt-body">
-                <div class="gantt-grid" id="ganttGrid"></div>
-                <div class="gantt-rows" id="ganttRows"></div>
-                <svg id="ganttLinks" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></svg>
-            </div>
-        </div>
-    </div>
-
-    <!-- Status Bar -->
-    <div class="status-bar">
-        <div class="status-left">
-            <div class="status-item">
-                <span>Tasks:</span>
-                <strong id="taskCount">0</strong>
-            </div>
-            <div class="status-item">
-                <span>Project Duration:</span>
-                <strong id="projectDuration">0 days</strong>
-            </div>
-            <div class="status-item">
-                <div class="status-indicator critical"></div>
-                <span>Critical Path</span>
-            </div>
-            <div class="status-item">
-                <div class="status-indicator normal"></div>
-                <span>Normal Path</span>
-            </div>
-        </div>
-        <div class="status-right">
-            <span id="projectDates">Start: -- | End: --</span>
-        </div>
-    </div>
-
-    <!-- New Project Modal -->
-    <div class="modal" id="newProjectModal">
-        <div class="modal-content">
-            <div class="modal-header">Create New Project</div>
-            <div class="form-group">
-                <label>Project Name</label>
-                <input type="text" id="projectName" placeholder="Enter project name">
-            </div>
-            <div class="form-group">
-                <label>Start Date</label>
-                <input type="date" id="projectStartDate">
-            </div>
-            <div class="form-group">
-                <label>Description</label>
-                <textarea id="projectDescription" rows="3" placeholder="Enter project description"></textarea>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" onclick="closeModal('newProjectModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="createProject()">Create Project</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Project data structure
-        let project = {
-            name: 'Sample Project',
+// ...existing code...
+<script>
+    // Project data structure
+    let project = {
+        name: 'Sample Project',
+        startDate: new Date(),
+        tasks: [],
+        nextId: 1
+    };
+
+    let selectedTaskId = null;
+    let zoomLevel = 30; // pixels per day
+
+    // Initialize the application
+    function init() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('projectStartDate').value = today;
+        createSampleProject();
+        renderProject();
+    }
+
+    // Create sample project with WBS structure
+    function createSampleProject() {
+        project = {
+            name: 'Intranet Project',
             startDate: new Date(),
-            tasks: [],
-            nextId: 1
+            tasks: [
+                // ...same as before...
+            ],
+            nextId: 17
         };
+        calculateSchedule();
+    }
 
-        let selectedTaskId = null;
-        let zoomLevel = 30; // pixels per day
-
-        // Initialize the application
-        function init() {
-            // Set today's date as default
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('projectStartDate').value = today;
-            
-            // Create sample project
-            createSampleProject();
-            renderProject();
-        }
-
-        // Create sample project with WBS structure
-        function createSampleProject() {
-            project = {
-                name: 'Intranet Project',
-                startDate: new Date(),
-                tasks: [
-                    {
-                        id: 1,
-                        wbs: '0.0',
-                        name: 'Intranet Project',
-                        duration: 0,
-                        start: new Date(),
-                        finish: null,
-                        predecessor: '',
-                        level: 0,
-                        isSummary: true,
-                        expanded: true
-                    },
-                    {
-                        id: 2,
-                        wbs: '1.0',
-                        name: 'Concept',
-                        duration: 0,
-                        start: new Date(),
-                        finish: null,
-                        predecessor: '',
-                        level: 1,
-                        isSummary: true,
-                        expanded: true
-                    },
-                    {
-                        id: 3,
-                        wbs: '1.1',
-                        name: 'Evaluate current systems',
-                        duration: 3,
-                        start: new Date(),
-                        finish: null,
-                        predecessor: '',
-                        level: 2,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 4,
-                        wbs: '1.2',
-                        name: 'Define requirements',
-                        duration: 0,
-                        start: null,
-                        finish: null,
-                        predecessor: '',
-                        level: 2,
-                        isSummary: true,
-                        expanded: true
-                    },
-                    {
-                        id: 5,
-                        wbs: '1.2.1',
-                        name: 'Define user requirements',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '3',
-                        level: 3,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 6,
-                        wbs: '1.2.2',
-                        name: 'Define content requirements',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '5',
-                        level: 3,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 7,
-                        wbs: '1.2.3',
-                        name: 'Define system requirements',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '6',
-                        level: 3,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 8,
-                        wbs: '1.2.4',
-                        name: 'Define server owner requirements',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '7',
-                        level: 3,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 9,
-                        wbs: '1.3',
-                        name: 'Define specific functionality',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '8',
-                        level: 2,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 10,
-                        wbs: '1.4',
-                        name: 'Define risks and risk management approach',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '9',
-                        level: 2,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 11,
-                        wbs: '1.5',
-                        name: 'Develop project plan',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '10',
-                        level: 2,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 12,
-                        wbs: '1.6',
-                        name: 'Brief Web development team',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '11',
-                        level: 2,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 13,
-                        wbs: '2.0',
-                        name: 'Web Site Design',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '12',
-                        level: 1,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 14,
-                        wbs: '3.0',
-                        name: 'Web Site Development',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '13',
-                        level: 1,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 15,
-                        wbs: '4.0',
-                        name: 'Roll Out',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '14',
-                        level: 1,
-                        isSummary: false,
-                        expanded: true
-                    },
-                    {
-                        id: 16,
-                        wbs: '5.0',
-                        name: 'Support',
-                        duration: 3,
-                        start: null,
-                        finish: null,
-                        predecessor: '15',
-                        level: 1,
-                        isSummary: false,
-                        expanded: true
-                    }
-                ],
-                nextId: 17
-            };
-            
-            calculateSchedule();
-        }
-
-        // Calculate project schedule
-        function calculateSchedule() {
-            // Reset all dates
-            project.tasks.forEach(task => {
-                if (!task.isSummary && task.duration > 0) {
-                    task.start = null;
-                    task.finish = null;
+    // Only return tasks that are visible (expanded in hierarchy)
+    function getVisibleTasks() {
+        const visible = [];
+        const stack = [];
+        project.tasks.forEach(task => {
+            // Only show if all parents are expanded
+            let show = true;
+            for (let i = 0; i < stack.length; i++) {
+                if (!stack[i].expanded) {
+                    show = false;
+                    break;
                 }
-            });
+            }
+            if (show) visible.push(task);
+            if (task.isSummary) stack[task.level] = task;
+            stack.length = task.level + 1;
+        });
+        return visible;
+    }
 
-            // Calculate forward pass
-            let changed = true;
-            while (changed) {
-                changed = false;
-                
-                project.tasks.forEach(task => {
-                    if (!task.isSummary && task.duration > 0) {
-                        if (!task.predecessor || task.predecessor === '') {
-                            // No predecessor, start at project start
-                            if (!task.start) {
-                                task.start = new Date(project.startDate);
-                                task.finish = addWorkDays(task.start, task.duration);
-                                changed = true;
-                            }
-                        } else {
-                            // Has predecessor
-                            const predIds = task.predecessor.split(',').map(p => p.trim());
-                            let maxFinish = null;
-                            
-                            predIds.forEach(predId => {
-                                const pred = project.tasks.find(t => t.id == predId);
-                                if (pred && pred.finish) {
-                                    if (!maxFinish || pred.finish > maxFinish) {
-                                        maxFinish = new Date(pred.finish);
-                                    }
+    // Calculate project schedule
+    function calculateSchedule() {
+        // Reset all dates
+        project.tasks.forEach(task => {
+            if (!task.isSummary) {
+                task.start = null;
+                task.finish = null;
+            }
+        });
+
+        // Forward pass
+        let changed = true;
+        while (changed) {
+            changed = false;
+            project.tasks.forEach(task => {
+                if (!task.isSummary) {
+                    let duration = parseInt(task.duration) || 0;
+                    if (duration < 0) duration = 0;
+                    task.duration = duration;
+                    if (!task.predecessor || task.predecessor === '') {
+                        if (!task.start) {
+                            task.start = new Date(project.startDate);
+                            task.finish = duration === 0 ? new Date(task.start) : addWorkDays(task.start, duration - 1);
+                            changed = true;
+                        }
+                    } else {
+                        const predIds = task.predecessor.split(',').map(p => p.trim()).filter(Boolean);
+                        let maxFinish = null;
+                        predIds.forEach(predId => {
+                            const pred = project.tasks.find(t => t.id == predId);
+                            if (pred && pred.finish) {
+                                if (!maxFinish || pred.finish > maxFinish) {
+                                    maxFinish = new Date(pred.finish);
                                 }
-                            });
-                            
-                            if (maxFinish && !task.start) {
-                                task.start = addWorkDays(maxFinish, 1);
-                                task.finish = addWorkDays(task.start, task.duration - 1);
-                                changed = true;
                             }
+                        });
+                        if (maxFinish && !task.start) {
+                            task.start = addWorkDays(maxFinish, 1);
+                            task.finish = duration === 0 ? new Date(task.start) : addWorkDays(task.start, duration - 1);
+                            changed = true;
                         }
                     }
-                });
-            }
-
-            // Calculate summary tasks
-            updateSummaryTasks();
-            
-            // Calculate critical path
-            calculateCriticalPath();
+                }
+            });
         }
+        updateSummaryTasks();
+        calculateCriticalPath();
+    }
 
-        // Update summary task dates
-        function updateSummaryTasks() {
-            // Process from bottom level up
-            for (let level = 3; level >= 0; level--) {
-                project.tasks.forEach(task => {
-                    if (task.isSummary && task.level === level) {
-                        const children = getChildTasks(task);
-                        if (children.length > 0) {
-                            let minStart = null;
-                            let maxFinish = null;
-                            
-                            children.forEach(child => {
-                                if (child.start && (!minStart || child.start < minStart)) {
-                                    minStart = new Date(child.start);
-                                }
-                                if (child.finish && (!maxFinish || child.finish > maxFinish)) {
-                                    maxFinish = new Date(child.finish);
-                                }
-                            });
-                            
-                            task.start = minStart;
-                            task.finish = maxFinish;
-                            if (minStart && maxFinish) {
-                                task.duration = getWorkDays(minStart, maxFinish);
+    // Update summary task dates
+    function updateSummaryTasks() {
+        for (let level = 3; level >= 0; level--) {
+            project.tasks.forEach(task => {
+                if (task.isSummary && task.level === level) {
+                    const children = getChildTasks(task);
+                    if (children.length > 0) {
+                        let minStart = null;
+                        let maxFinish = null;
+                        children.forEach(child => {
+                            if (child.start && (!minStart || child.start < minStart)) {
+                                minStart = new Date(child.start);
                             }
+                            if (child.finish && (!maxFinish || child.finish > maxFinish)) {
+                                maxFinish = new Date(child.finish);
+                            }
+                        });
+                        task.start = minStart;
+                        task.finish = maxFinish;
+                        if (minStart && maxFinish) {
+                            task.duration = getWorkDays(minStart, maxFinish);
                         }
                     }
-                });
+                }
+            });
+        }
+    }
+
+    // Get child tasks of a summary task
+    function getChildTasks(summaryTask) {
+        return project.tasks.filter(
+            t => t.level === summaryTask.level + 1 && t.wbs.startsWith(summaryTask.wbs + '.')
+        );
+    }
+
+    // Calculate critical path
+    function calculateCriticalPath() {
+        let projectEnd = null;
+        project.tasks.forEach(task => {
+            if (task.finish && (!projectEnd || task.finish > projectEnd)) {
+                projectEnd = task.finish;
             }
-        }
+        });
+        project.tasks.forEach(task => { task.isCritical = false; });
+        const endTasks = project.tasks.filter(task =>
+            !task.isSummary && task.finish && projectEnd && task.finish.getTime() === projectEnd.getTime()
+        );
+        endTasks.forEach(task => markCriticalPath(task));
+    }
 
-        // Get child tasks of a summary task
-        function getChildTasks(summaryTask) {
-            const children = [];
-            const wbsPrefix = summaryTask.wbs + '.';
-            
-            project.tasks.forEach(task => {
-                if (task.wbs.startsWith(wbsPrefix) && task.level === summaryTask.level + 1) {
-                    children.push(task);
+    function markCriticalPath(task) {
+        task.isCritical = true;
+        if (task.predecessor) {
+            const predIds = task.predecessor.split(',').map(p => p.trim());
+            predIds.forEach(predId => {
+                const pred = project.tasks.find(t => t.id == predId);
+                if (pred && !pred.isCritical) markCriticalPath(pred);
+            });
+        }
+    }
+
+    // Add work days (skip weekends)
+    function addWorkDays(startDate, days) {
+        let date = new Date(startDate);
+        let daysAdded = 0;
+        while (daysAdded < days) {
+            date.setDate(date.getDate() + 1);
+            if (date.getDay() !== 0 && date.getDay() !== 6) daysAdded++;
+        }
+        return date;
+    }
+
+    // Get work days between two dates
+    function getWorkDays(startDate, endDate) {
+        let count = 0;
+        let date = new Date(startDate);
+        while (date <= endDate) {
+            if (date.getDay() !== 0 && date.getDay() !== 6) count++;
+            date.setDate(date.getDate() + 1);
+        }
+        return count;
+    }
+
+    // Render the entire project
+    function renderProject() {
+        renderTaskList();
+        renderGanttChart();
+        updateStatusBar();
+    }
+
+    // Render task list (only visible tasks)
+    function renderTaskList() {
+        const taskList = document.getElementById('taskList');
+        taskList.innerHTML = '';
+        getVisibleTasks().forEach(task => {
+            const row = document.createElement('div');
+            row.className = 'task-row';
+            if (task.isSummary) row.className += ' summary';
+            if (task.id === selectedTaskId) row.className += ' selected';
+            row.onclick = () => selectTask(task.id);
+
+            // ID
+            const idCell = document.createElement('div');
+            idCell.className = 'task-id';
+            idCell.textContent = task.id;
+            row.appendChild(idCell);
+
+            // WBS
+            const wbsCell = document.createElement('div');
+            wbsCell.className = 'task-wbs';
+            wbsCell.textContent = task.wbs;
+            row.appendChild(wbsCell);
+
+            // Name
+            const nameCell = document.createElement('div');
+            nameCell.className = 'task-name';
+            for (let i = 0; i < task.level; i++) {
+                const spacer = document.createElement('span');
+                spacer.className = 'indent-spacer';
+                nameCell.appendChild(spacer);
+            }
+            if (task.isSummary) {
+                const expandIcon = document.createElement('span');
+                expandIcon.innerHTML = '▼';
+                expandIcon.className = 'expand-icon';
+                if (!task.expanded) expandIcon.className += ' collapsed';
+                expandIcon.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleTask(task.id);
+                };
+                nameCell.appendChild(expandIcon);
+            }
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.value = task.name;
+            nameInput.onchange = (e) => updateTaskField(task.id, 'name', e.target.value);
+            nameCell.appendChild(nameInput);
+            row.appendChild(nameCell);
+
+            // Duration
+            const durationCell = document.createElement('div');
+            durationCell.className = 'task-duration';
+            if (!task.isSummary) {
+                const durationInput = document.createElement('input');
+                durationInput.type = 'number';
+                durationInput.min = 0;
+                durationInput.value = task.duration;
+                durationInput.onchange = (e) => {
+                    let val = parseInt(e.target.value) || 0;
+                    if (val < 0) val = 0;
+                    updateTaskField(task.id, 'duration', val);
+                };
+                durationCell.appendChild(durationInput);
+            } else {
+                durationCell.textContent = task.duration ? task.duration + ' days' : '';
+            }
+            row.appendChild(durationCell);
+
+            // Start
+            const startCell = document.createElement('div');
+            startCell.className = 'task-start';
+            const startInput = document.createElement('input');
+            startInput.type = 'text';
+            startInput.value = task.start ? formatDate(task.start) : '';
+            startInput.readOnly = true;
+            startCell.appendChild(startInput);
+            row.appendChild(startCell);
+
+            // Finish
+            const finishCell = document.createElement('div');
+            finishCell.className = 'task-finish';
+            const finishInput = document.createElement('input');
+            finishInput.type = 'text';
+            finishInput.value = task.finish ? formatDate(task.finish) : '';
+            finishInput.readOnly = true;
+            finishCell.appendChild(finishInput);
+            row.appendChild(finishCell);
+
+            // Predecessor
+            const predCell = document.createElement('div');
+            predCell.className = 'task-predecessor';
+            if (!task.isSummary) {
+                const predInput = document.createElement('input');
+                predInput.type = 'text';
+                predInput.value = task.predecessor || '';
+                predInput.onchange = (e) => updateTaskField(task.id, 'predecessor', e.target.value);
+                predCell.appendChild(predInput);
+            }
+            row.appendChild(predCell);
+
+            taskList.appendChild(row);
+        });
+    }
+
+    // Render Gantt chart (only visible tasks)
+    function renderGanttChart() {
+        renderGanttHeader();
+        renderGanttGrid();
+        renderGanttBars();
+        renderGanttLinks();
+    }
+
+    function renderGanttHeader() {
+        const header = document.getElementById('ganttHeader');
+        header.innerHTML = '';
+        let minDate = new Date(project.startDate);
+        let maxDate = new Date(project.startDate);
+        project.tasks.forEach(task => {
+            if (task.finish && task.finish > maxDate) maxDate = new Date(task.finish);
+        });
+        maxDate = addWorkDays(maxDate, 10);
+        const monthHeader = document.createElement('div');
+        monthHeader.className = 'month-header';
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'day-header';
+        let currentDate = new Date(minDate);
+        let currentMonth = -1;
+        let monthWidth = 0;
+        while (currentDate <= maxDate) {
+            const dayCell = document.createElement('div');
+            dayCell.className = 'day-cell';
+            if (currentDate.getDay() === 0 || currentDate.getDay() === 6) dayCell.className += ' weekend';
+            dayCell.textContent = currentDate.getDate();
+            dayCell.style.width = zoomLevel + 'px';
+            dayHeader.appendChild(dayCell);
+            if (currentDate.getMonth() !== currentMonth) {
+                if (currentMonth !== -1) {
+                    const monthCell = document.createElement('div');
+                    monthCell.className = 'month-cell';
+                    monthCell.textContent = getMonthName(currentMonth) + ' ' + currentDate.getFullYear();
+                    monthCell.style.width = monthWidth + 'px';
+                    monthHeader.appendChild(monthCell);
                 }
-            });
-            
-            return children;
+                currentMonth = currentDate.getMonth();
+                monthWidth = 0;
+            }
+            monthWidth += zoomLevel;
+            currentDate.setDate(currentDate.getDate() + 1);
         }
-
-        // Calculate critical path
-        function calculateCriticalPath() {
-            // Find project end date
-            let projectEnd = null;
-            project.tasks.forEach(task => {
-                if (task.finish && (!projectEnd || task.finish > projectEnd)) {
-                    projectEnd = task.finish;
-                }
-            });
-
-            // Mark all tasks as non-critical initially
-            project.tasks.forEach(task => {
-                task.isCritical = false;
-            });
-
-            // Find tasks that end at project end
-            const endTasks = project.tasks.filter(task => 
-                !task.isSummary && task.finish && 
-                task.finish.getTime() === projectEnd.getTime()
-            );
-
-            // Trace backwards from end tasks
-            endTasks.forEach(task => {
-                markCriticalPath(task);
-            });
+        if (monthWidth > 0) {
+            const monthCell = document.createElement('div');
+            monthCell.className = 'month-cell';
+            monthCell.textContent = getMonthName(currentMonth) + ' ' + currentDate.getFullYear();
+            monthCell.style.width = monthWidth + 'px';
+            monthHeader.appendChild(monthCell);
         }
+        header.appendChild(monthHeader);
+        header.appendChild(dayHeader);
+    }
 
-        // Mark critical path recursively
-        function markCriticalPath(task) {
-            task.isCritical = true;
-            
-            if (task.predecessor) {
+    function renderGanttGrid() {
+        const grid = document.getElementById('ganttGrid');
+        grid.innerHTML = '';
+        let minDate = new Date(project.startDate);
+        let maxDate = new Date(project.startDate);
+        project.tasks.forEach(task => {
+            if (task.finish && task.finish > maxDate) maxDate = new Date(task.finish);
+        });
+        maxDate = addWorkDays(maxDate, 10);
+        let currentDate = new Date(minDate);
+        while (currentDate <= maxDate) {
+            const column = document.createElement('div');
+            column.className = 'grid-column';
+            if (currentDate.getDay() === 0 || currentDate.getDay() === 6) column.className += ' weekend';
+            column.style.width = zoomLevel + 'px';
+            grid.appendChild(column);
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+    }
+
+    function renderGanttBars() {
+        const rows = document.getElementById('ganttRows');
+        rows.innerHTML = '';
+        getVisibleTasks().forEach((task, idx) => {
+            const row = document.createElement('div');
+            row.className = 'gantt-row';
+            if (task.isSummary) row.className += ' summary';
+            if (task.start && task.finish) {
+                const bar = document.createElement('div');
+                bar.className = 'gantt-bar';
+                if (task.isSummary) bar.className += ' summary';
+                else if (task.duration === 0) bar.className += ' milestone';
+                else if (task.isCritical) bar.className += ' critical';
+                const startOffset = getDaysDiff(project.startDate, task.start) * zoomLevel;
+                const width = task.duration === 0 ? 16 : getDaysDiff(task.start, task.finish) * zoomLevel;
+                bar.style.left = startOffset + 'px';
+                bar.style.width = width + 'px';
+                if (task.duration > 0 && !task.isSummary) bar.textContent = task.name.substring(0, 20);
+                row.appendChild(bar);
+            }
+            rows.appendChild(row);
+        });
+    }
+
+    function renderGanttLinks() {
+        const svg = document.getElementById('ganttLinks');
+        svg.innerHTML = '';
+        const visibleTasks = getVisibleTasks();
+        visibleTasks.forEach((task, taskIndex) => {
+            if (task.predecessor && task.start) {
                 const predIds = task.predecessor.split(',').map(p => p.trim());
                 predIds.forEach(predId => {
                     const pred = project.tasks.find(t => t.id == predId);
-                    if (pred && !pred.isCritical) {
-                        markCriticalPath(pred);
+                    if (pred && pred.finish) {
+                        const predIndex = visibleTasks.indexOf(pred);
+                        if (predIndex === -1) return; // Only draw if both are visible
+                        const x1 = getDaysDiff(project.startDate, pred.finish) * zoomLevel;
+                        const y1 = predIndex * 37 + 18;
+                        const x2 = getDaysDiff(project.startDate, task.start) * zoomLevel;
+                        const y2 = taskIndex * 37 + 18;
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        const d = `M ${x1} ${y1} L ${x1 + 10} ${y1} L ${x1 + 10} ${y2} L ${x2} ${y2}`;
+                        path.setAttribute('d', d);
+                        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        g.className.baseVal = 'gantt-link';
+                        if (task.isCritical && pred.isCritical) g.className.baseVal += ' critical';
+                        g.appendChild(path);
+                        const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                        arrow.setAttribute('points', `${x2},${y2} ${x2-5},${y2-3} ${x2-5},${y2+3}`);
+                        arrow.setAttribute('fill', task.isCritical && pred.isCritical ? 'var(--critical-path)' : 'var(--text-secondary)');
+                        g.appendChild(arrow);
+                        svg.appendChild(g);
                     }
                 });
             }
-        }
+        });
+    }
 
-        // Add work days (skip weekends)
-        function addWorkDays(startDate, days) {
-            let date = new Date(startDate);
-            let daysAdded = 0;
-            
-            while (daysAdded < days) {
-                date.setDate(date.getDate() + 1);
-                if (date.getDay() !== 0 && date.getDay() !== 6) {
-                    daysAdded++;
+    // Update status bar
+    function updateStatusBar() {
+        document.getElementById('taskCount').textContent = project.tasks.length;
+        if (project.tasks.length > 0 && project.tasks[0].finish) {
+            const duration = getWorkDays(project.startDate, project.tasks[0].finish);
+            document.getElementById('projectDuration').textContent = duration + ' days';
+            document.getElementById('projectDates').textContent =
+                `Start: ${formatDate(project.startDate)} | End: ${formatDate(project.tasks[0].finish)}`;
+        } else {
+            document.getElementById('projectDuration').textContent = '0 days';
+            document.getElementById('projectDates').textContent = 'Start: -- | End: --';
+        }
+    }
+
+    // Task operations
+    function selectTask(taskId) {
+        selectedTaskId = taskId;
+        renderTaskList();
+    }
+
+    function toggleTask(taskId) {
+        const task = project.tasks.find(t => t.id === taskId);
+        if (task) {
+            task.expanded = !task.expanded;
+            renderProject();
+        }
+    }
+
+    function updateTaskField(taskId, field, value) {
+        const task = project.tasks.find(t => t.id === taskId);
+        if (task) {
+            if (field === 'duration') {
+                value = parseInt(value) || 0;
+                if (value < 0) value = 0;
+            }
+            if (field === 'predecessor') {
+                // Validate predecessor: must be existing task id, not self, not circular
+                const predIds = value.split(',').map(p => p.trim()).filter(Boolean);
+                for (const predId of predIds) {
+                    if (parseInt(predId) === task.id) {
+                        alert('Task cannot be predecessor of itself.');
+                        return;
+                    }
+                    if (!project.tasks.find(t => t.id == predId)) {
+                        alert('Invalid predecessor id: ' + predId);
+                        return;
+                    }
                 }
             }
-            
-            return date;
+            task[field] = value;
+            calculateSchedule();
+            renderProject();
         }
+    }
 
-        // Get work days between two dates
-        function getWorkDays(startDate, endDate) {
-            let count = 0;
-            let date = new Date(startDate);
-            
-            while (date <= endDate) {
-                if (date.getDay() !== 0 && date.getDay() !== 6) {
-                    count++;
-                }
-                date.setDate(date.getDate() + 1);
+    function addTask() {
+        let insertLevel = 1;
+        let insertIndex = project.tasks.length;
+        if (selectedTaskId) {
+            const selectedTask = project.tasks.find(t => t.id === selectedTaskId);
+            insertLevel = selectedTask ? selectedTask.level : 1;
+            insertIndex = project.tasks.findIndex(t => t.id === selectedTaskId) + 1;
+        }
+        const newTask = {
+            id: project.nextId++,
+            wbs: '', // will be set below
+            name: 'New Task',
+            duration: 1,
+            start: null,
+            finish: null,
+            predecessor: '',
+            level: insertLevel,
+            isSummary: false,
+            expanded: true
+        };
+        project.tasks.splice(insertIndex, 0, newTask);
+        updateWBS();
+        calculateSchedule();
+        renderProject();
+    }
+
+    function deleteTask() {
+        if (selectedTaskId) {
+            project.tasks = project.tasks.filter(t => t.id !== selectedTaskId);
+            selectedTaskId = null;
+            updateWBS();
+            calculateSchedule();
+            renderProject();
+        }
+    }
+
+    function indentTask() {
+        if (selectedTaskId) {
+            const idx = project.tasks.findIndex(t => t.id === selectedTaskId);
+            if (idx > 0 && project.tasks[idx].level < 3) {
+                project.tasks[idx].level++;
+                updateWBS();
+                calculateSchedule();
+                renderProject();
             }
-            
-            return count;
         }
+    }
 
-        // Render the entire project
-        function renderProject() {
-            renderTaskList();
+    function outdentTask() {
+        if (selectedTaskId) {
+            const idx = project.tasks.findIndex(t => t.id === selectedTaskId);
+            if (idx >= 0 && project.tasks[idx].level > 0) {
+                project.tasks[idx].level--;
+                updateWBS();
+                calculateSchedule();
+                renderProject();
+            }
+        }
+    }
+
+    function addMilestone() {
+        const milestone = {
+            id: project.nextId++,
+            wbs: '',
+            name: 'Milestone',
+            duration: 0,
+            start: null,
+            finish: null,
+            predecessor: selectedTaskId || '',
+            level: 1,
+            isSummary: false,
+            expanded: true
+        };
+        project.tasks.push(milestone);
+        updateWBS();
+        calculateSchedule();
+        renderProject();
+    }
+
+    // Update WBS codes and summary flags
+    function updateWBS() {
+        let counters = [0, 0, 0, 0];
+        project.tasks.forEach(task => {
+            counters[task.level]++;
+            for (let i = task.level + 1; i < counters.length; i++) counters[i] = 0;
+            task.wbs = counters.slice(0, task.level + 1).join('.') + (task.level === 0 ? '.0' : '');
+            // Set isSummary if next task is deeper
+            const idx = project.tasks.indexOf(task);
+            const next = project.tasks[idx + 1];
+            task.isSummary = !!(next && next.level > task.level);
+        });
+    }
+
+    // Zoom functions
+    function zoomIn() {
+        if (zoomLevel < 50) {
+            zoomLevel += 5;
             renderGanttChart();
-            updateStatusBar();
         }
+    }
 
-        // Render task list
-        function renderTaskList() {
-            const taskList = document.getElementById('taskList');
-            taskList.innerHTML = '';
-            
-            project.tasks.forEach(task => {
-                const row = document.createElement('div');
-                row.className = 'task-row';
-                if (task.isSummary) row.className += ' summary';
-                if (task.id === selectedTaskId) row.className += ' selected';
-                row.onclick = () => selectTask(task.id);
-                
-                // ID
-                const idCell = document.createElement('div');
-                idCell.className = 'task-id';
-                idCell.textContent = task.id;
-                row.appendChild(idCell);
-                
-                // WBS
-                const wbsCell = document.createElement('div');
-                wbsCell.className = 'task-wbs';
-                wbsCell.textContent = task.wbs;
-                row.appendChild(wbsCell);
-                
-                // Name
-                const nameCell = document.createElement('div');
-                nameCell.className = 'task-name';
-                
-                // Add indentation
-                for (let i = 0; i < task.level; i++) {
-                    const spacer = document.createElement('span');
-                    spacer.className = 'indent-spacer';
-                    nameCell.appendChild(spacer);
-                }
-                
-                // Add expand/collapse icon for summary tasks
-                if (task.isSummary) {
-                    const expandIcon = document.createElement('span');
-                    expandIcon.innerHTML = '▼';
-                    expandIcon.className = 'expand-icon';
-                    if (!task.expanded) expandIcon.className += ' collapsed';
-                    expandIcon.onclick = (e) => {
-                        e.stopPropagation();
-                        toggleTask(task.id);
-                    };
-                    nameCell.appendChild(expandIcon);
-                }
-                
-                const nameInput = document.createElement('input');
-                nameInput.type = 'text';
-                nameInput.value = task.name;
-                nameInput.onchange = (e) => updateTaskField(task.id, 'name', e.target.value);
-                nameCell.appendChild(nameInput);
-                row.appendChild(nameCell);
-                
-                // Duration
-                const durationCell = document.createElement('div');
-                durationCell.className = 'task-duration';
-                if (!task.isSummary) {
-                    const durationInput = document.createElement('input');
-                    durationInput.type = 'text';
-                    durationInput.value = task.duration + (task.duration === 0 ? '' : ' days');
-                    durationInput.onchange = (e) => {
-                        const val = parseInt(e.target.value) || 0;
-                        updateTaskField(task.id, 'duration', val);
-                    };
-                    durationCell.appendChild(durationInput);
-                } else {
-                    durationCell.textContent = task.duration ? task.duration + ' days' : '';
-                }
-                row.appendChild(durationCell);
-                
-                // Start
-                const startCell = document.createElement('div');
-                startCell.className = 'task-start';
-                const startInput = document.createElement('input');
-                startInput.type = 'text';
-                startInput.value = task.start ? formatDate(task.start) : '';
-                startInput.readOnly = true;
-                startCell.appendChild(startInput);
-                row.appendChild(startCell);
-                
-                // Finish
-                const finishCell = document.createElement('div');
-                finishCell.className = 'task-finish';
-                const finishInput = document.createElement('input');
-                finishInput.type = 'text';
-                finishInput.value = task.finish ? formatDate(task.finish) : '';
-                finishInput.readOnly = true;
-                finishCell.appendChild(finishInput);
-                row.appendChild(finishCell);
-                
-                // Predecessor
-                const predCell = document.createElement('div');
-                predCell.className = 'task-predecessor';
-                if (!task.isSummary) {
-                    const predInput = document.createElement('input');
-                    predInput.type = 'text';
-                    predInput.value = task.predecessor || '';
-                    predInput.onchange = (e) => updateTaskField(task.id, 'predecessor', e.target.value);
-                    predCell.appendChild(predInput);
-                }
-                row.appendChild(predCell);
-                
-                taskList.appendChild(row);
-            });
+    function zoomOut() {
+        if (zoomLevel > 10) {
+            zoomLevel -= 5;
+            renderGanttChart();
         }
+    }
 
-        // Render Gantt chart
-        function renderGanttChart() {
-            renderGanttHeader();
-            renderGanttGrid();
-            renderGanttBars();
-            renderGanttLinks();
+    // Project management
+    function showNewProjectModal() {
+        document.getElementById('newProjectModal').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function createProject() {
+        const name = document.getElementById('projectName').value;
+        const startDate = document.getElementById('projectStartDate').value;
+        if (name && startDate) {
+            project = {
+                name: name,
+                startDate: new Date(startDate),
+                tasks: [],
+                nextId: 1
+            };
+            renderProject();
+            closeModal('newProjectModal');
         }
+    }
 
-        // Render Gantt header (timeline)
-        function renderGanttHeader() {
-            const header = document.getElementById('ganttHeader');
-            header.innerHTML = '';
-            
-            // Calculate date range
-            let minDate = new Date(project.startDate);
-            let maxDate = new Date(project.startDate);
-            
-            project.tasks.forEach(task => {
-                if (task.finish && task.finish > maxDate) {
-                    maxDate = new Date(task.finish);
-                }
-            });
-            
-            // Add buffer
-            maxDate = addWorkDays(maxDate, 10);
-            
-            // Create month header
-            const monthHeader = document.createElement('div');
-            monthHeader.className = 'month-header';
-            
-            // Create day header
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'day-header';
-            
-            let currentDate = new Date(minDate);
-            let currentMonth = -1;
-            let monthWidth = 0;
-            
-            while (currentDate <= maxDate) {
-                // Day cell
-                const dayCell = document.createElement('div');
-                dayCell.className = 'day-cell';
-                if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-                    dayCell.className += ' weekend';
-                }
-                dayCell.textContent = currentDate.getDate();
-                dayCell.style.width = zoomLevel + 'px';
-                dayHeader.appendChild(dayCell);
-                
-                // Month cell
-                if (currentDate.getMonth() !== currentMonth) {
-                    if (currentMonth !== -1) {
-                        const monthCell = document.createElement('div');
-                        monthCell.className = 'month-cell';
-                        monthCell.textContent = getMonthName(currentMonth) + ' ' + currentDate.getFullYear();
-                        monthCell.style.width = monthWidth + 'px';
-                        monthHeader.appendChild(monthCell);
-                    }
-                    currentMonth = currentDate.getMonth();
-                    monthWidth = 0;
-                }
-                monthWidth += zoomLevel;
-                
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-            
-            // Add last month
-            if (monthWidth > 0) {
-                const monthCell = document.createElement('div');
-                monthCell.className = 'month-cell';
-                monthCell.textContent = getMonthName(currentMonth) + ' ' + currentDate.getFullYear();
-                monthCell.style.width = monthWidth + 'px';
-                monthHeader.appendChild(monthCell);
-            }
-            
-            header.appendChild(monthHeader);
-            header.appendChild(dayHeader);
-        }
+    function saveProject() {
+        const dataStr = JSON.stringify(project, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        const exportFileDefaultName = project.name.replace(/\s+/g, '_') + '.json';
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+    }
 
-        // Render Gantt grid
-        function renderGanttGrid() {
-            const grid = document.getElementById('ganttGrid');
-            grid.innerHTML = '';
-            
-            // Calculate date range
-            let minDate = new Date(project.startDate);
-            let maxDate = new Date(project.startDate);
-            
-            project.tasks.forEach(task => {
-                if (task.finish && task.finish > maxDate) {
-                    maxDate = new Date(task.finish);
-                }
-            });
-            
-            maxDate = addWorkDays(maxDate, 10);
-            
-            let currentDate = new Date(minDate);
-            while (currentDate <= maxDate) {
-                const column = document.createElement('div');
-                column.className = 'grid-column';
-                if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-                    column.className += ' weekend';
-                }
-                column.style.width = zoomLevel + 'px';
-                grid.appendChild(column);
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-        }
-
-        // Render Gantt bars
-        function renderGanttBars() {
-            const rows = document.getElementById('ganttRows');
-            rows.innerHTML = '';
-            
-            project.tasks.forEach(task => {
-                const row = document.createElement('div');
-                row.className = 'gantt-row';
-                if (task.isSummary) row.className += ' summary';
-                
-                if (task.start && task.finish) {
-                    const bar = document.createElement('div');
-                    bar.className = 'gantt-bar';
-                    
-                    if (task.isSummary) {
-                        bar.className += ' summary';
-                    } else if (task.duration === 0) {
-                        bar.className += ' milestone';
-                    } else if (task.isCritical) {
-                        bar.className += ' critical';
-                    }
-                    
-                    const startOffset = getDaysDiff(project.startDate, task.start) * zoomLevel;
-                    const width = task.duration === 0 ? 16 : getDaysDiff(task.start, task.finish) * zoomLevel;
-                    
-                    bar.style.left = startOffset + 'px';
-                    bar.style.width = width + 'px';
-                    
-                    if (task.duration > 0 && !task.isSummary) {
-                        bar.textContent = task.name.substring(0, 20);
-                    }
-                    
-                    row.appendChild(bar);
-                }
-                
-                rows.appendChild(row);
-            });
-        }
-
-        // Render Gantt links
-        function renderGanttLinks() {
-            const svg = document.getElementById('ganttLinks');
-            svg.innerHTML = '';
-            
-            project.tasks.forEach(task => {
-                if (task.predecessor && task.start) {
-                    const predIds = task.predecessor.split(',').map(p => p.trim());
-                    
-                    predIds.forEach(predId => {
-                        const pred = project.tasks.find(t => t.id == predId);
-                        if (pred && pred.finish) {
-                            const predIndex = project.tasks.indexOf(pred);
-                            const taskIndex = project.tasks.indexOf(task);
-                            
-                            const x1 = getDaysDiff(project.startDate, pred.finish) * zoomLevel;
-                            const y1 = predIndex * 37 + 18;
-                            const x2 = getDaysDiff(project.startDate, task.start) * zoomLevel;
-                            const y2 = taskIndex * 37 + 18;
-                            
-                            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                            const d = `M ${x1} ${y1} L ${x1 + 10} ${y1} L ${x1 + 10} ${y2} L ${x2} ${y2}`;
-                            path.setAttribute('d', d);
-                            
-                            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                            g.className.baseVal = 'gantt-link';
-                            if (task.isCritical && pred.isCritical) {
-                                g.className.baseVal += ' critical';
-                            }
-                            g.appendChild(path);
-                            
-                            // Add arrow
-                            const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                            arrow.setAttribute('points', `${x2},${y2} ${x2-5},${y2-3} ${x2-5},${y2+3}`);
-                            arrow.setAttribute('fill', task.isCritical && pred.isCritical ? 'var(--critical-path)' : 'var(--text-secondary)');
-                            g.appendChild(arrow);
-                            
-                            svg.appendChild(g);
-                        }
+    function loadProject() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = e => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = event => {
+                try {
+                    const loadedProject = JSON.parse(event.target.result);
+                    project = loadedProject;
+                    project.startDate = new Date(project.startDate);
+                    project.tasks.forEach(task => {
+                        if (task.start) task.start = new Date(task.start);
+                        if (task.finish) task.finish = new Date(task.finish);
                     });
-                }
-            });
-        }
-
-        // Update status bar
-        function updateStatusBar() {
-            document.getElementById('taskCount').textContent = project.tasks.length;
-            
-            if (project.tasks.length > 0 && project.tasks[0].finish) {
-                const duration = getWorkDays(project.startDate, project.tasks[0].finish);
-                document.getElementById('projectDuration').textContent = duration + ' days';
-                document.getElementById('projectDates').textContent = 
-                    `Start: ${formatDate(project.startDate)} | End: ${formatDate(project.tasks[0].finish)}`;
-            }
-        }
-
-        // Task operations
-        function selectTask(taskId) {
-            selectedTaskId = taskId;
-            renderTaskList();
-        }
-
-        function toggleTask(taskId) {
-            const task = project.tasks.find(t => t.id === taskId);
-            if (task) {
-                task.expanded = !task.expanded;
-                renderProject();
-            }
-        }
-
-        function updateTaskField(taskId, field, value) {
-            const task = project.tasks.find(t => t.id === taskId);
-            if (task) {
-                task[field] = value;
-                calculateSchedule();
-                renderProject();
-            }
-        }
-
-        function addTask() {
-            const newTask = {
-                id: project.nextId++,
-                wbs: project.nextId + '.0',
-                name: 'New Task',
-                duration: 1,
-                start: null,
-                finish: null,
-                predecessor: '',
-                level: 1,
-                isSummary: false,
-                expanded: true
-            };
-            
-            if (selectedTaskId) {
-                const index = project.tasks.findIndex(t => t.id === selectedTaskId);
-                project.tasks.splice(index + 1, 0, newTask);
-            } else {
-                project.tasks.push(newTask);
-            }
-            
-            calculateSchedule();
-            renderProject();
-        }
-
-        function deleteTask() {
-            if (selectedTaskId) {
-                project.tasks = project.tasks.filter(t => t.id !== selectedTaskId);
-                selectedTaskId = null;
-                calculateSchedule();
-                renderProject();
-            }
-        }
-
-        function indentTask() {
-            if (selectedTaskId) {
-                const task = project.tasks.find(t => t.id === selectedTaskId);
-                if (task && task.level < 3) {
-                    task.level++;
+                    updateWBS();
+                    calculateSchedule();
                     renderProject();
+                } catch (error) {
+                    alert('Error loading project file');
                 }
-            }
-        }
-
-        function outdentTask() {
-            if (selectedTaskId) {
-                const task = project.tasks.find(t => t.id === selectedTaskId);
-                if (task && task.level > 0) {
-                    task.level--;
-                    renderProject();
-                }
-            }
-        }
-
-        function addMilestone() {
-            const milestone = {
-                id: project.nextId++,
-                wbs: 'M' + project.nextId,
-                name: 'Milestone',
-                duration: 0,
-                start: null,
-                finish: null,
-                predecessor: selectedTaskId || '',
-                level: 1,
-                isSummary: false,
-                expanded: true
             };
-            
-            project.tasks.push(milestone);
-            calculateSchedule();
-            renderProject();
-        }
+            reader.readAsText(file);
+        };
+        input.click();
+    }
 
-        // Zoom functions
-        function zoomIn() {
-            if (zoomLevel < 50) {
-                zoomLevel += 5;
-                renderGanttChart();
-            }
-        }
+    // Utility functions
+    function formatDate(date) {
+        if (!date) return '';
+        const d = new Date(date);
+        return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+    }
 
-        function zoomOut() {
-            if (zoomLevel > 10) {
-                zoomLevel -= 5;
-                renderGanttChart();
-            }
-        }
+    function getDaysDiff(date1, date2) {
+        const d1 = new Date(date1);
+        const d2 = new Date(date2);
+        return Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+    }
 
-        // Project management
-        function showNewProjectModal() {
-            document.getElementById('newProjectModal').classList.add('active');
-        }
+    function getMonthName(month) {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return months[month];
+    }
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        function createProject() {
-            const name = document.getElementById('projectName').value;
-            const startDate = document.getElementById('projectStartDate').value;
-            
-            if (name && startDate) {
-                project = {
-                    name: name,
-                    startDate: new Date(startDate),
-                    tasks: [],
-                    nextId: 1
-                };
-                
-                renderProject();
-                closeModal('newProjectModal');
-            }
-        }
-
-        function saveProject() {
-            const dataStr = JSON.stringify(project, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportFileDefaultName = project.name.replace(/\s+/g, '_') + '.json';
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-        }
-
-        function loadProject() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            
-            input.onchange = e => {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                
-                reader.onload = event => {
-                    try {
-                        const loadedProject = JSON.parse(event.target.result);
-                        project = loadedProject;
-                        
-                        // Convert date strings back to Date objects
-                        project.startDate = new Date(project.startDate);
-                        project.tasks.forEach(task => {
-                            if (task.start) task.start = new Date(task.start);
-                            if (task.finish) task.finish = new Date(task.finish);
-                        });
-                        
-                        calculateSchedule();
-                        renderProject();
-                    } catch (error) {
-                        alert('Error loading project file');
-                    }
-                };
-                
-                reader.readAsText(file);
-            };
-            
-            input.click();
-        }
-
-        // Utility functions
-        function formatDate(date) {
-            if (!date) return '';
-            const d = new Date(date);
-            return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
-        }
-
-        function getDaysDiff(date1, date2) {
-            const diff = Math.abs(date2 - date1);
-            return Math.ceil(diff / (1000 * 60 * 60 * 24));
-        }
-
-        function getMonthName(month) {
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return months[month];
-            // Initialize on load
-        window.onload = init;
-    </script>
-</body>
-</html>
-        }
-
-        // Initialize on load
-        window.onload = init;
+    // Initialize on load
+    window.onload = init;
+</script>
+// ...existing code...
