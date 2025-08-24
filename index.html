@@ -1,5 +1,129 @@
-// ...existing code...
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniProject - Professional Gantt Chart Manager</title>
+    <style>
+        /* ...[CSS unchanged, same as your original for brevity]... */
+        /* You can keep your existing CSS here */
+        /* ... */
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            UniProject - Gantt Chart Manager
+        </div>
+        <div class="header-actions">
+            <button class="btn" onclick="saveProject()">Save</button>
+            <button class="btn" onclick="loadProject()">Open</button>
+            <button class="btn btn-primary" onclick="showNewProjectModal()">New Project</button>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <button class="btn btn-icon" onclick="addTask()" title="Add Task">+</button>
+            <button class="btn btn-icon" onclick="deleteTask()" title="Delete Task">🗑️</button>
+        </div>
+        <div class="toolbar-group">
+            <button class="btn btn-icon" onclick="indentTask()" title="Indent">→</button>
+            <button class="btn btn-icon" onclick="outdentTask()" title="Outdent">←</button>
+        </div>
+        <div class="toolbar-group">
+            <button class="btn" onclick="zoomIn()">Zoom In</button>
+            <button class="btn" onclick="zoomOut()">Zoom Out</button>
+        </div>
+        <div class="toolbar-group">
+            <button class="btn" onclick="addMilestone()">Add Milestone</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Task Panel -->
+        <div class="task-panel">
+            <div class="task-header">
+                <div>#</div>
+                <div>WBS</div>
+                <div>Task Name</div>
+                <div>Duration</div>
+                <div>Start</div>
+                <div>Finish</div>
+                <div>Predecessor</div>
+            </div>
+            <div class="task-list" id="taskList"></div>
+        </div>
+
+        <!-- Gantt Panel -->
+        <div class="gantt-panel">
+            <div class="gantt-header" id="ganttHeader"></div>
+            <div class="gantt-body">
+                <div class="gantt-grid" id="ganttGrid"></div>
+                <div class="gantt-rows" id="ganttRows"></div>
+                <svg id="ganttLinks" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-left">
+            <div class="status-item">
+                <span>Tasks:</span>
+                <strong id="taskCount">0</strong>
+            </div>
+            <div class="status-item">
+                <span>Project Duration:</span>
+                <strong id="projectDuration">0 days</strong>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator critical"></div>
+                <span>Critical Path</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator normal"></div>
+                <span>Normal Path</span>
+            </div>
+        </div>
+        <div class="status-right">
+            <span id="projectDates">Start: -- | End: --</span>
+        </div>
+    </div>
+
+    <!-- New Project Modal -->
+    <div class="modal" id="newProjectModal">
+        <div class="modal-content">
+            <div class="modal-header">Create New Project</div>
+            <div class="form-group">
+                <label>Project Name</label>
+                <input type="text" id="projectName" placeholder="Enter project name">
+            </div>
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" id="projectStartDate">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="projectDescription" rows="3" placeholder="Enter project description"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('newProjectModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="createProject()">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
     // Project data structure
     let project = {
         name: 'Sample Project',
@@ -11,7 +135,6 @@
     let selectedTaskId = null;
     let zoomLevel = 30; // pixels per day
 
-    // Initialize the application
     function init() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('projectStartDate').value = today;
@@ -19,25 +142,33 @@
         renderProject();
     }
 
-    // Create sample project with WBS structure
     function createSampleProject() {
         project = {
             name: 'Intranet Project',
             startDate: new Date(),
             tasks: [
-                // ...same as before...
+                { id: 1, wbs: '1.0', name: 'Planning', duration: 5, start: null, finish: null, predecessor: '', level: 0, isSummary: true, expanded: true },
+                { id: 2, wbs: '1.1', name: 'Requirements', duration: 3, start: null, finish: null, predecessor: '', level: 1, isSummary: false, expanded: true },
+                { id: 3, wbs: '1.2', name: 'Design', duration: 2, start: null, finish: null, predecessor: '2', level: 1, isSummary: false, expanded: true },
+                { id: 4, wbs: '2.0', name: 'Implementation', duration: 10, start: null, finish: null, predecessor: '', level: 0, isSummary: true, expanded: true },
+                { id: 5, wbs: '2.1', name: 'Frontend', duration: 5, start: null, finish: null, predecessor: '3', level: 1, isSummary: true, expanded: true },
+                { id: 6, wbs: '2.1.1', name: 'UI', duration: 3, start: null, finish: null, predecessor: '', level: 2, isSummary: false, expanded: true },
+                { id: 7, wbs: '2.1.2', name: 'UX', duration: 2, start: null, finish: null, predecessor: '6', level: 2, isSummary: false, expanded: true },
+                { id: 8, wbs: '2.2', name: 'Backend', duration: 5, start: null, finish: null, predecessor: '3', level: 1, isSummary: false, expanded: true },
+                { id: 9, wbs: '3.0', name: 'Testing', duration: 4, start: null, finish: null, predecessor: '5,8', level: 0, isSummary: false, expanded: true },
+                { id: 10, wbs: '4.0', name: 'Deployment', duration: 2, start: null, finish: null, predecessor: '9', level: 0, isSummary: false, expanded: true },
+                { id: 11, wbs: '5.0', name: 'Project Complete', duration: 0, start: null, finish: null, predecessor: '10', level: 0, isSummary: false, expanded: true }
             ],
-            nextId: 17
+            nextId: 12
         };
+        updateWBS();
         calculateSchedule();
     }
 
-    // Only return tasks that are visible (expanded in hierarchy)
     function getVisibleTasks() {
         const visible = [];
         const stack = [];
         project.tasks.forEach(task => {
-            // Only show if all parents are expanded
             let show = true;
             for (let i = 0; i < stack.length; i++) {
                 if (!stack[i].expanded) {
@@ -52,17 +183,13 @@
         return visible;
     }
 
-    // Calculate project schedule
     function calculateSchedule() {
-        // Reset all dates
         project.tasks.forEach(task => {
             if (!task.isSummary) {
                 task.start = null;
                 task.finish = null;
             }
         });
-
-        // Forward pass
         let changed = true;
         while (changed) {
             changed = false;
@@ -101,7 +228,6 @@
         calculateCriticalPath();
     }
 
-    // Update summary task dates
     function updateSummaryTasks() {
         for (let level = 3; level >= 0; level--) {
             project.tasks.forEach(task => {
@@ -129,14 +255,12 @@
         }
     }
 
-    // Get child tasks of a summary task
     function getChildTasks(summaryTask) {
         return project.tasks.filter(
             t => t.level === summaryTask.level + 1 && t.wbs.startsWith(summaryTask.wbs + '.')
         );
     }
 
-    // Calculate critical path
     function calculateCriticalPath() {
         let projectEnd = null;
         project.tasks.forEach(task => {
@@ -162,7 +286,6 @@
         }
     }
 
-    // Add work days (skip weekends)
     function addWorkDays(startDate, days) {
         let date = new Date(startDate);
         let daysAdded = 0;
@@ -173,7 +296,6 @@
         return date;
     }
 
-    // Get work days between two dates
     function getWorkDays(startDate, endDate) {
         let count = 0;
         let date = new Date(startDate);
@@ -184,14 +306,12 @@
         return count;
     }
 
-    // Render the entire project
     function renderProject() {
         renderTaskList();
         renderGanttChart();
         updateStatusBar();
     }
 
-    // Render task list (only visible tasks)
     function renderTaskList() {
         const taskList = document.getElementById('taskList');
         taskList.innerHTML = '';
@@ -202,19 +322,16 @@
             if (task.id === selectedTaskId) row.className += ' selected';
             row.onclick = () => selectTask(task.id);
 
-            // ID
             const idCell = document.createElement('div');
             idCell.className = 'task-id';
             idCell.textContent = task.id;
             row.appendChild(idCell);
 
-            // WBS
             const wbsCell = document.createElement('div');
             wbsCell.className = 'task-wbs';
             wbsCell.textContent = task.wbs;
             row.appendChild(wbsCell);
 
-            // Name
             const nameCell = document.createElement('div');
             nameCell.className = 'task-name';
             for (let i = 0; i < task.level; i++) {
@@ -240,7 +357,6 @@
             nameCell.appendChild(nameInput);
             row.appendChild(nameCell);
 
-            // Duration
             const durationCell = document.createElement('div');
             durationCell.className = 'task-duration';
             if (!task.isSummary) {
@@ -259,7 +375,6 @@
             }
             row.appendChild(durationCell);
 
-            // Start
             const startCell = document.createElement('div');
             startCell.className = 'task-start';
             const startInput = document.createElement('input');
@@ -269,7 +384,6 @@
             startCell.appendChild(startInput);
             row.appendChild(startCell);
 
-            // Finish
             const finishCell = document.createElement('div');
             finishCell.className = 'task-finish';
             const finishInput = document.createElement('input');
@@ -279,7 +393,6 @@
             finishCell.appendChild(finishInput);
             row.appendChild(finishCell);
 
-            // Predecessor
             const predCell = document.createElement('div');
             predCell.className = 'task-predecessor';
             if (!task.isSummary) {
@@ -295,7 +408,6 @@
         });
     }
 
-    // Render Gantt chart (only visible tasks)
     function renderGanttChart() {
         renderGanttHeader();
         renderGanttGrid();
@@ -406,7 +518,7 @@
                     const pred = project.tasks.find(t => t.id == predId);
                     if (pred && pred.finish) {
                         const predIndex = visibleTasks.indexOf(pred);
-                        if (predIndex === -1) return; // Only draw if both are visible
+                        if (predIndex === -1) return;
                         const x1 = getDaysDiff(project.startDate, pred.finish) * zoomLevel;
                         const y1 = predIndex * 37 + 18;
                         const x2 = getDaysDiff(project.startDate, task.start) * zoomLevel;
@@ -429,7 +541,6 @@
         });
     }
 
-    // Update status bar
     function updateStatusBar() {
         document.getElementById('taskCount').textContent = project.tasks.length;
         if (project.tasks.length > 0 && project.tasks[0].finish) {
@@ -443,7 +554,6 @@
         }
     }
 
-    // Task operations
     function selectTask(taskId) {
         selectedTaskId = taskId;
         renderTaskList();
@@ -465,7 +575,6 @@
                 if (value < 0) value = 0;
             }
             if (field === 'predecessor') {
-                // Validate predecessor: must be existing task id, not self, not circular
                 const predIds = value.split(',').map(p => p.trim()).filter(Boolean);
                 for (const predId of predIds) {
                     if (parseInt(predId) === task.id) {
@@ -494,7 +603,7 @@
         }
         const newTask = {
             id: project.nextId++,
-            wbs: '', // will be set below
+            wbs: '',
             name: 'New Task',
             duration: 1,
             start: null,
@@ -563,21 +672,18 @@
         renderProject();
     }
 
-    // Update WBS codes and summary flags
     function updateWBS() {
         let counters = [0, 0, 0, 0];
         project.tasks.forEach(task => {
             counters[task.level]++;
             for (let i = task.level + 1; i < counters.length; i++) counters[i] = 0;
             task.wbs = counters.slice(0, task.level + 1).join('.') + (task.level === 0 ? '.0' : '');
-            // Set isSummary if next task is deeper
             const idx = project.tasks.indexOf(task);
             const next = project.tasks[idx + 1];
             task.isSummary = !!(next && next.level > task.level);
         });
     }
 
-    // Zoom functions
     function zoomIn() {
         if (zoomLevel < 50) {
             zoomLevel += 5;
@@ -592,7 +698,6 @@
         }
     }
 
-    // Project management
     function showNewProjectModal() {
         document.getElementById('newProjectModal').classList.add('active');
     }
@@ -654,7 +759,6 @@
         input.click();
     }
 
-    // Utility functions
     function formatDate(date) {
         if (!date) return '';
         const d = new Date(date);
@@ -673,7 +777,7 @@
         return months[month];
     }
 
-    // Initialize on load
     window.onload = init;
-</script>
-// ...existing code...
+    </script>
+</body>
+</html>
