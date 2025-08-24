@@ -151,8 +151,13 @@ function setupEventListeners() {
 
     const menuToggle = document.getElementById('menuToggle');
     if (menuToggle) {
+        const toolbar = document.querySelector('.toolbar');
+        const headerActions = document.querySelector('.header-actions');
         menuToggle.addEventListener('click', () => {
-            document.querySelector('.toolbar').classList.toggle('open');
+            toolbar.classList.toggle('open');
+            if (headerActions) {
+                headerActions.classList.toggle('open');
+            }
         });
     }
 }
