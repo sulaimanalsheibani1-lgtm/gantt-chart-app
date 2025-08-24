@@ -111,6 +111,13 @@ function setupEventListeners() {
             }
         }
     });
+
+    const menuToggle = document.getElementById('menuToggle');
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            document.querySelector('.toolbar').classList.toggle('open');
+        });
+    }
 }
 
 function createSampleProject() {

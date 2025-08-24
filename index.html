@@ -22,6 +22,7 @@
             </svg>
             <span id="projectTitle">UniProject - Gantt Chart Manager</span>
         </div>
+        <button class="btn menu-toggle" id="menuToggle">☰</button>
         <div class="header-actions">
             <button class="btn" onclick="saveProject()">💾 Save</button>
             <button class="btn" onclick="loadProject()">📂 Open</button>
@@ -32,6 +33,12 @@
 
     <!-- Toolbar -->
     <div class="toolbar">
+        <div class="toolbar-group main-actions">
+            <button class="btn" onclick="saveProject()">💾 Save</button>
+            <button class="btn" onclick="loadProject()">📂 Open</button>
+            <button class="btn" onclick="exportProject()">📤 Export</button>
+            <button class="btn btn-primary" onclick="showNewProjectModal()">➕ New Project</button>
+        </div>
         <div class="toolbar-group">
             <button class="btn btn-icon" onclick="addTask()" title="Add Task">➕</button>
             <button class="btn btn-icon" onclick="deleteTask()" title="Delete Task">🗑️</button>

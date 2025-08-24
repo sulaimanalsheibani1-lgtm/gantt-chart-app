@@ -77,6 +77,11 @@ body {
     align-items: center;
 }
 
+.main-actions {
+    display: none;
+    gap: 12px;
+}
+
 .btn {
     padding: 8px 16px;
     border: 1px solid var(--border);
@@ -113,6 +118,10 @@ body {
     justify-content: center;
 }
 
+.menu-toggle {
+    display: none;
+}
+
 .main-container {
     display: flex;
     height: calc(100vh - 140px);
@@ -126,7 +135,7 @@ body {
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .task-header {
@@ -139,6 +148,9 @@ body {
     font-size: 12px;
     text-transform: uppercase;
     color: var(--text-secondary);
+    position: sticky;
+    top: 0;
+    z-index: 5;
 }
 
 .task-header > div {
@@ -149,8 +161,6 @@ body {
 
 .task-list {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
 }
 
 .task-row {
@@ -245,7 +255,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .gantt-header {
@@ -626,27 +636,59 @@ body {
 }
 
 @media (max-width: 768px) {
-    .task-panel {
-        width: 100%;
-        min-width: unset;
-    }
-    
-    .gantt-panel {
-        display: none;
-    }
-    
     .main-container {
         flex-direction: column;
     }
-    
+
+    .task-panel,
+    .gantt-panel {
+        width: 100%;
+        min-width: unset;
+        height: 50vh;
+    }
+
+    .task-panel {
+        overflow-x: auto;
+    }
+
+    .task-header,
+    .task-row {
+        min-width: 700px;
+    }
+
     .toolbar {
-        flex-wrap: wrap;
+        display: none;
+        flex-direction: column;
+        width: 100%;
         gap: 8px;
     }
-    
+
+    .toolbar.open {
+        display: flex;
+    }
+
+    .main-actions {
+        display: flex;
+        width: 100%;
+        order: -1;
+    }
+
     .header-actions {
-        flex-wrap: wrap;
-        gap: 8px;
+        display: none;
+    }
+
+    .btn {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+
+    .btn-icon {
+        min-width: 32px;
+        padding: 6px;
+    }
+
+    .menu-toggle {
+        display: inline-flex;
     }
 }
 
