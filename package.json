@@ -1,9 +1,30 @@
 {
   "name": "gantt-chart-app",
-  "version": "0.1.0",
-  "description": "Gantt chart demo using Frappe Gantt and custom implementation",
+  "version": "1.0.0",
+  "description": "A simple yet powerful Gantt chart manager inspired by Microsoft Project. Built with vanilla JavaScript and a focus on accessibility and performance.",
+  "type": "module",
   "scripts": {
-    "test": "node test/tasks.test.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint . --ext .js",
+    "e2e": "playwright test",
+    "format": "prettier --write ."
   },
+  "dependencies": {},
+  "devDependencies": {
+    "vite": "^5.2.0",
+    "vitest": "^1.1.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.5",
+    "playwright": "^1.40.0"
+  },
+  "keywords": [
+    "gantt",
+    "project management",
+    "task scheduling",
+    "vanilla javascript"
+  ],
   "license": "MIT"
 }

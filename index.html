@@ -1,259 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>UniProject - Professional Gantt Chart Manager</title>
-
-    <link rel="stylesheet" href="styles.css?v=1">
-</head>
-<body>
-    <!-- Top Bar -->
-    <div class="toolbar" role="toolbar">
-        <div class="toolbar-left">
-            <span class="app-name">UniProject</span>
-            <span class="project-name" id="projectTitle">New Project</span>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UniProject – Professional Gantt Chart Manager</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Application toolbar -->
+    <header class="toolbar" aria-label="Main toolbar">
+      <!-- Left section: project name -->
+      <div class="toolbar-left" id="projectTitle" aria-live="polite"></div>
+      <!-- Right section: grouped controls -->
+      <nav class="toolbar-right" aria-label="Command groups">
+        <!-- Primary commands -->
+        <div class="group" aria-label="Primary commands">
+          <button id="newProjectBtn" class="btn btn--primary" aria-label="Create new project">New Project</button>
+          <button id="saveBtn" class="btn" aria-label="Save project">Save</button>
+          <button id="openBtn" class="btn" aria-label="Open project">Open</button>
+          <button id="exportBtn" class="btn" aria-label="Export project">Export</button>
         </div>
-        <div class="toolbar-right">
-            <div class="group" aria-label="Primary actions">
-                <button class="btn btn--primary" onclick="showNewProjectModal()" aria-label="New Project" title="New Project">📁 New Project</button>
-                <button class="btn" onclick="saveProject()" aria-label="Save" title="Save">💾 Save</button>
-                <button class="btn" onclick="loadProject()" aria-label="Open" title="Open">📂 Open</button>
-                <button class="btn" onclick="exportProject()" aria-label="Export" title="Export">📤 Export</button>
-            </div>
-            <div class="group" aria-label="Task group">
-                <button class="btn" onclick="addTask()" aria-label="Add Task" title="Insert a task under the selected row">➕ Add Task</button>
-                <button class="btn" onclick="deleteTask()" aria-label="Delete Task" title="Delete task">🗑️ Delete Task</button>
-                <button class="btn" onclick="indentTask()" aria-label="Indent" title="Indent">➡️ Indent</button>
-                <button class="btn" onclick="outdentTask()" aria-label="Outdent" title="Outdent">⬅️ Outdent</button>
-                <button class="btn" onclick="moveTaskUp()" aria-label="Move Up" title="Move up">⬆️ Move Up</button>
-                <button class="btn" onclick="moveTaskDown()" aria-label="Move Down" title="Move down">⬇️ Move Down</button>
-            </div>
-            <div class="group" aria-label="Schedule group">
-                <button class="btn" onclick="linkTasks()" aria-label="Link Tasks" title="Create a finish-to-start link">🔗 Link Tasks</button>
-                <button class="btn" onclick="unlinkTasks()" aria-label="Unlink Tasks" title="Remove dependency link">⛓️ Unlink Tasks</button>
-                <button class="btn" onclick="autoSchedule()" aria-label="Auto Schedule" title="Re-calculate dates from predecessors">⚡ Auto Schedule</button>
-                <button class="btn" onclick="setMilestone()" aria-label="Set Milestone" title="Change duration to 0 days">🏁 Set Milestone</button>
-                <button class="btn" onclick="toggleCriticalPath()" aria-label="Toggle Critical Path" title="Highlight tasks with zero slack">📊 Toggle Critical Path</button>
-            </div>
-            <div class="group" aria-label="View group">
-                <button class="btn" onclick="zoomOut()" aria-label="Zoom Out" title="Zoom out">➖ Zoom Out</button>
-                <button class="btn" onclick="zoomReset()" aria-label="Zoom Reset" title="Reset zoom">🔄 Zoom Reset</button>
-                <button class="btn" onclick="zoomIn()" aria-label="Zoom In" title="Zoom in">➕ Zoom In</button>
-                <button class="btn" onclick="showProjectSettings()" aria-label="Settings" title="Settings">⚙️ Settings</button>
-            </div>
+        <!-- Task commands -->
+        <div class="group" aria-label="Task commands">
+          <button id="addTaskBtn" class="btn" aria-label="Add task">Add Task</button>
+          <button id="deleteTaskBtn" class="btn" aria-label="Delete selected task">Delete Task</button>
+          <button id="indentBtn" class="btn" aria-label="Indent selected task">Indent</button>
+          <button id="outdentBtn" class="btn" aria-label="Outdent selected task">Outdent</button>
+          <button id="moveUpBtn" class="btn" aria-label="Move selected task up">Move Up</button>
+          <button id="moveDownBtn" class="btn" aria-label="Move selected task down">Move Down</button>
         </div>
-    </div>
+        <!-- Schedule commands -->
+        <div class="group" aria-label="Schedule commands">
+          <button id="linkBtn" class="btn" aria-label="Link tasks">Link Tasks</button>
+          <button id="unlinkBtn" class="btn" aria-label="Unlink tasks">Unlink Tasks</button>
+          <button id="autoScheduleBtn" class="btn" aria-label="Auto schedule tasks">Auto Schedule</button>
+          <button id="milestoneBtn" class="btn" aria-label="Set milestone on selected task">Set Milestone</button>
+          <button id="criticalPathBtn" class="btn" aria-label="Toggle critical path highlighting">Critical Path</button>
+        </div>
+        <!-- View commands -->
+        <div class="group" aria-label="View commands">
+          <button id="zoomOutBtn" class="btn" aria-label="Zoom out">Zoom Out</button>
+          <button id="zoomResetBtn" class="btn" aria-label="Reset zoom">Zoom Reset</button>
+          <button id="zoomInBtn" class="btn" aria-label="Zoom in">Zoom In</button>
+          <button id="settingsBtn" class="btn" aria-label="Settings">Settings</button>
+        </div>
+      </nav>
+    </header>
 
-    <!-- Main Container -->
+    <!-- Main content -->
     <div class="main-container">
-        <!-- Task Panel -->
-        <div class="task-panel">
-            <div class="task-header">
-                <div>ID</div>
-                <div>WBS</div>
-                <div>Task Name</div>
-                <div>Duration</div>
-                <div>Start</div>
-                <div>Finish</div>
-                <div>Predecessors</div>
-                <div>% Complete</div>
-            </div>
-            <div class="task-list" id="taskList"></div>
+      <!-- Task panel -->
+      <section class="task-panel" aria-label="Task table">
+        <div class="task-header" role="row">
+          <div role="columnheader">ID</div>
+          <div role="columnheader">WBS</div>
+          <div role="columnheader">Task Name</div>
+          <div role="columnheader">Duration</div>
+          <div role="columnheader">Start</div>
+          <div role="columnheader">Finish</div>
+          <div role="columnheader">Predecessors</div>
+          <div role="columnheader">% Complete</div>
         </div>
-
-        <!-- Resizer -->
-        <div class="resizer" id="panelResizer"></div>
-
-        <!-- Gantt Panel -->
-        <div class="gantt-panel">
-            <div class="gantt-header" id="ganttHeader"></div>
-            <div class="gantt-body">
-                <div class="gantt-grid" id="ganttGrid"></div>
-                <div class="gantt-rows" id="ganttRows"></div>
-                <svg id="ganttLinks" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></svg>
-            </div>
+        <div class="task-list" id="taskList" role="rowgroup"></div>
+      </section>
+      <!-- Resizer between table and chart -->
+      <div id="panelResizer" class="panel-resizer" role="separator" aria-orientation="vertical" aria-label="Resize panels"></div>
+      <!-- Gantt panel -->
+      <section class="gantt-panel" aria-label="Gantt chart">
+        <div class="gantt-header" id="ganttHeader"></div>
+        <div class="gantt-body" id="ganttBody">
+          <div class="bars-container" id="barsContainer"></div>
+          <svg class="deps-svg" id="depsSvg" aria-hidden="true"></svg>
         </div>
+      </section>
     </div>
 
-    <!-- Status Bar -->
-    <div class="status-bar">
-        <div class="status-left">
-            <div class="status-item">
-                <span>Tasks:</span>
-                <strong id="taskCount">0</strong>
-            </div>
-            <div class="status-item">
-                <span>Duration:</span>
-                <strong id="projectDuration">0 days</strong>
-            </div>
-            <div class="status-item">
-                <span>Progress:</span>
-                <strong id="projectProgress">0%</strong>
-            </div>
-            <div class="status-item">
-                <div class="status-indicator critical"></div>
-                <span>Critical</span>
-            </div>
-            <div class="status-item">
-                <div class="status-indicator normal"></div>
-                <span>Normal</span>
-            </div>
-        </div>
-        <div class="status-right">
-            <span id="projectDates">Start: -- | End: --</span>
-        </div>
+    <!-- Mobile bottom bar -->
+    <div class="bottom-bar" id="bottomBar" aria-label="Mobile actions" hidden>
+      <button id="mobileAddTask" class="btn" aria-label="Add task">Add</button>
+      <button id="mobileLinkTasks" class="btn" aria-label="Link tasks">Link</button>
+      <button id="mobileAutoSchedule" class="btn" aria-label="Auto schedule">Auto</button>
+      <button id="mobileZoom" class="btn" aria-label="Adjust zoom">Zoom</button>
     </div>
 
-    <!-- New Project Modal -->
-    <div class="modal" id="newProjectModal">
-        <div class="modal-content">
-            <div class="modal-header">Create New Project</div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Project Name *</label>
-                    <input type="text" id="projectName" placeholder="Enter project name" required>
-                    <div class="error-message" id="projectNameError"></div>
-                </div>
-                <div class="form-group">
-                    <label>Start Date *</label>
-                    <input type="date" id="projectStartDate" required>
-                </div>
-                <div class="form-group">
-                    <label>Description</label>
-                    <textarea id="projectDescription" rows="3" placeholder="Enter project description"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Template</label>
-                    <select id="projectTemplate">
-                        <option value="">Blank Project</option>
-                        <option value="software">Software Development</option>
-                        <option value="construction">Construction Project</option>
-                        <option value="marketing">Marketing Campaign</option>
-                        <option value="event">Event Planning</option>
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" onclick="closeModal('newProjectModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="createProject()">Create Project</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Project Settings Modal -->
-    <div class="modal" id="projectSettingsModal">
-        <div class="modal-content">
-            <div class="modal-header">Project Settings</div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Working Days</label>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <label><input type="checkbox" id="workMon" checked> Monday</label>
-                        <label><input type="checkbox" id="workTue" checked> Tuesday</label>
-                        <label><input type="checkbox" id="workWed" checked> Wednesday</label>
-                        <label><input type="checkbox" id="workThu" checked> Thursday</label>
-                        <label><input type="checkbox" id="workFri" checked> Friday</label>
-                        <label><input type="checkbox" id="workSat"> Saturday</label>
-                        <label><input type="checkbox" id="workSun"> Sunday</label>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Working Hours Per Day</label>
-                    <input type="number" id="workingHours" value="8" min="1" max="24">
-                </div>
-                <div class="form-group">
-                    <label>Date Format</label>
-                    <select id="dateFormat">
-                        <option value="MM/dd/yyyy">MM/dd/yyyy</option>
-                        <option value="dd/MM/yyyy">dd/MM/yyyy</option>
-                        <option value="yyyy-MM-dd">yyyy-MM-dd</option>
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" onclick="closeModal('projectSettingsModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="saveProjectSettings()">Save Settings</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Task Info Modal -->
-    <div class="modal" id="taskInfoModal">
-        <div class="modal-content">
-            <div class="modal-header">Task Information</div>
-            <div class="modal-body">
-                <div class="tab-buttons">
-                    <button type="button" class="tab-button active" data-tab="general" onclick="switchTaskInfoTab('general')">General</button>
-                    <button type="button" class="tab-button" data-tab="predecessors" onclick="switchTaskInfoTab('predecessors')">Predecessors</button>
-                    <button type="button" class="tab-button" data-tab="notes" onclick="switchTaskInfoTab('notes')">Notes</button>
-                </div>
-                <div class="tab-content active" id="taskInfoTab-general">
-                    <div class="form-group">
-                        <label>Name</label>
-                        <input type="text" id="taskInfoName">
-                    </div>
-                    <div class="form-group">
-                        <label>Start</label>
-                        <input type="date" id="taskInfoStart">
-                    </div>
-                    <div class="form-group">
-                        <label>Finish</label>
-                        <input type="date" id="taskInfoFinish">
-                    </div>
-                    <div class="form-group">
-                        <label>Duration (days)</label>
-                        <input type="number" id="taskInfoDuration" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Progress (%)</label>
-                        <input type="number" id="taskInfoProgress" min="0" max="100">
-                    </div>
-                </div>
-                <div class="tab-content" id="taskInfoTab-predecessors">
-                    <div class="form-group">
-                        <label>Predecessors</label>
-                        <input type="text" id="taskInfoPredecessors" placeholder="e.g., 1FS,2SS">
-                    </div>
-                </div>
-                <div class="tab-content" id="taskInfoTab-notes">
-                    <div class="form-group">
-                        <label>Notes</label>
-                        <textarea id="taskInfoNotes" rows="6" placeholder="Add task notes"></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" onclick="closeModal('taskInfoModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="saveTaskInfo()">Save</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Context Menu -->
-    <div class="context-menu" id="contextMenu">
-        <div class="context-menu-item" onclick="addTask()">Add Task</div>
-        <div class="context-menu-item" onclick="addSubtask()">Add Subtask</div>
-        <div class="context-menu-separator"></div>
-        <div class="context-menu-item" onclick="duplicateTask()">Duplicate</div>
-        <div class="context-menu-item" onclick="deleteTask()">Delete</div>
-        <div class="context-menu-separator"></div>
-        <div class="context-menu-item" onclick="moveTaskUp()">Move Up</div>
-        <div class="context-menu-item" onclick="moveTaskDown()">Move Down</div>
-    </div>
-
-    <!-- Mobile Bottom Bar -->
-    <div class="bottom-bar">
-        <button class="btn" onclick="addTask()" aria-label="Add Task" title="Insert a task under the selected row">➕ Add Task</button>
-        <button class="btn" onclick="linkTasks()" aria-label="Link Tasks" title="Create a finish-to-start link">🔗 Link Tasks</button>
-        <button class="btn" onclick="autoSchedule()" aria-label="Auto Schedule" title="Re-calculate dates from predecessors">⚡ Auto Schedule</button>
-        <button class="btn" onclick="zoomIn()" aria-label="Zoom" title="Zoom">🔍 Zoom</button>
-    </div>
-
-    
-    <script src="app.js?v=1"></script>
-</body>
+    <script type="module" src="app.js"></script>
+  </body>
 </html>
