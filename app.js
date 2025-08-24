@@ -16,6 +16,7 @@ let selectedTaskId = null;
 let zoomLevel = 30; // pixels per day
 let showCriticalPath = true;
 let draggedTask = null;
+let taskInfoTaskId = null;
 
 // Initialize the application
 function init() {
@@ -145,6 +146,7 @@ function createSampleProject() {
             dateFormat: 'MM/dd/yyyy'
         }
     };
+    project.tasks.forEach(t => t.notes = t.notes || '');
     updateWBS();
     calculateSchedule();
 }
@@ -953,7 +955,8 @@ function addTask() {
         level: insertLevel,
         isSummary: false,
         expanded: true,
-        progress: 0
+        progress: 0,
+        notes: ''
     };
 
     project.tasks.splice(insertIndex, 0, newTask);
@@ -1292,6 +1295,53 @@ function showProjectSettings() {
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
+    if (modalId === 'taskInfoModal') taskInfoTaskId = null;
+}
+
+function switchTaskInfoTab(tab) {
+    const modal = document.getElementById('taskInfoModal');
+    modal.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    modal.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === `taskInfoTab-${tab}`);
+    });
+}
+
+function openTaskInfo(taskId) {
+    const task = project.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    taskInfoTaskId = taskId;
+    document.getElementById('taskInfoName').value = task.name;
+    document.getElementById('taskInfoStart').value = task.start ? formatInputDate(task.start) : '';
+    document.getElementById('taskInfoFinish').value = task.finish ? formatInputDate(task.finish) : '';
+    document.getElementById('taskInfoDuration').value = task.duration;
+    document.getElementById('taskInfoProgress').value = task.progress || 0;
+    document.getElementById('taskInfoPredecessors').value = task.predecessor || '';
+    document.getElementById('taskInfoNotes').value = task.notes || '';
+    switchTaskInfoTab('general');
+    document.getElementById('taskInfoModal').classList.add('active');
+}
+
+function saveTaskInfo() {
+    if (!taskInfoTaskId) return;
+    const task = project.tasks.find(t => t.id === taskInfoTaskId);
+    if (!task) return;
+
+    task.name = document.getElementById('taskInfoName').value.trim() || 'Task';
+    const startVal = document.getElementById('taskInfoStart').value;
+    task.start = startVal ? new Date(startVal) : null;
+    const finishVal = document.getElementById('taskInfoFinish').value;
+    task.finish = finishVal ? new Date(finishVal) : null;
+    task.duration = parseInt(document.getElementById('taskInfoDuration').value) || 0;
+    task.progress = Math.min(100, Math.max(0, parseInt(document.getElementById('taskInfoProgress').value) || 0));
+    task.predecessor = document.getElementById('taskInfoPredecessors').value.trim();
+    task.notes = document.getElementById('taskInfoNotes').value.trim();
+
+    calculateSchedule();
+    renderProject();
+    closeModal('taskInfoModal');
+    showMessage('Task updated successfully', 'success');
 }
 
 // Create new project
@@ -1408,7 +1458,8 @@ function applyTemplate(templateType) {
         level: taskTemplate.level,
         isSummary: taskTemplate.isSummary || false,
         expanded: true,
-        progress: 0
+        progress: 0,
+        notes: ''
     }));
 
     project.nextId = template.length + 1;
@@ -1456,9 +1507,7 @@ function hideContextMenu() {
 
 // Edit task (future enhancement)
 function editTask(taskId) {
-    // This could open a detailed task editing modal
-    // For now, just select the task
-    selectTask(taskId);
+    openTaskInfo(taskId);
 }
 
 // File operations
@@ -1510,6 +1559,7 @@ function loadProject() {
                     if (task.start) task.start = new Date(task.start);
                     if (task.finish) task.finish = new Date(task.finish);
                     if (task.progress === undefined) task.progress = 0;
+                    if (task.notes === undefined) task.notes = '';
                 });
                 
                 // Merge settings with defaults
@@ -1594,6 +1644,10 @@ function formatDate(date) {
         default:
             return `${month}/${day}/${year}`;
     }
+}
+
+function formatInputDate(date) {
+    return new Date(date).toISOString().split('T')[0];
 }
 
 function getDaysDiff(date1, date2) {
