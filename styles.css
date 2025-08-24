@@ -655,6 +655,12 @@ body {
 
     .header-actions {
         display: none;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .header-actions.open {
+        display: flex;
     }
 
     .btn {
