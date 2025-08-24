@@ -1,0 +1,9 @@
+{
+  "name": "gantt-chart-app",
+  "version": "0.1.0",
+  "description": "Gantt chart demo using Frappe Gantt and custom implementation",
+  "scripts": {
+    "test": "node test/tasks.test.js"
+  },
+  "license": "MIT"
+}

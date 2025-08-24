@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Frappe and Custom Gantt Demo</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.css">
+  <style>
+    /* Custom Gantt styles */
+    .gantt-container { display: flex; margin-top: 40px; }
+    .task-grid { width: 250px; border-collapse: collapse; }
+    .task-grid th, .task-grid td { border: 1px solid #ccc; padding: 4px; }
+    .chart-area { overflow: auto; flex: 1; position: relative; }
+    .time-scale { display: flex; border-bottom: 1px solid #aaa; }
+    .time-cell { width: 40px; text-align: center; border-right: 1px solid #ddd; font-size: 12px; }
+    .task-bars { position: relative; height: 150px; }
+    .task-bar { position: absolute; height: 20px; background: #3a87ad; border-radius: 2px; cursor: move; }
+    .task-bar .progress { height: 100%; background: #2e6f9f; }
+    .dependency-line { stroke: #555; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    .controls { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Frappe Gantt Demo</h1>
+  <div id="gantt"></div>
+
+  <h2>Custom Gantt Implementation</h2>
+  <div class="controls">
+    <label>Zoom: <input type="range" id="zoom" min="20" max="80" value="40"></label>
+    <button id="save">Save</button>
+    <button id="load">Load</button>
+  </div>
+  <div class="gantt-container">
+    <table class="task-grid">
+      <thead>
+        <tr><th>Task</th><th>Start</th><th>Finish</th><th>Progress</th></tr>
+      </thead>
+      <tbody id="task-rows"></tbody>
+    </table>
+
+    <div class="chart-area">
+      <div class="time-scale" id="time-scale"></div>
+      <svg id="dependencies" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
+        <defs>
+          <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="2" orient="auto">
+            <path d="M0,0 L0,4 L4,2 z" fill="#555" />
+          </marker>
+        </defs>
+      </svg>
+      <div class="task-bars" id="task-bars"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.umd.js"></script>
+  <script>
+    // 1) Data Structure
+    const tasks = [
+      { id: 'T1', name: 'Concept', start: '2024-05-01', end: '2024-05-10', progress: 60, dependencies: '' },
+      { id: 'T2', name: 'Design', start: '2024-05-11', end: '2024-05-20', progress: 30, dependencies: 'T1' }
+    ];
+
+    // 2) Minimal Gantt with Frappe Gantt
+    new Gantt('#gantt', tasks, { view_mode: 'Day', date_format: 'YYYY-MM-DD' });
+
+    // 3) Custom Implementation
+    const chartStart = new Date('2024-05-01');
+    let dayWidth = 40;
+    const rowsContainer = document.getElementById('task-rows');
+    const scaleContainer = document.getElementById('time-scale');
+    const barsContainer = document.getElementById('task-bars');
+    const depsSvg = document.getElementById('dependencies');
+
+    function renderTable() {
+      rowsContainer.innerHTML = '';
+      tasks.forEach(t => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${t.name}</td><td>${t.start}</td><td>${t.end}</td><td>${t.progress}%</td>`;
+        rowsContainer.appendChild(tr);
+      });
+    }
+
+    function renderScale(days = 30) {
+      scaleContainer.innerHTML = '';
+      for (let i = 0; i < days; i++) {
+        const d = new Date(chartStart);
+        d.setDate(chartStart.getDate() + i);
+        const cell = document.createElement('div');
+        cell.className = 'time-cell';
+        cell.textContent = d.getDate();
+        cell.style.width = dayWidth + 'px';
+        scaleContainer.appendChild(cell);
+      }
+    }
+
+    function renderBars() {
+      barsContainer.innerHTML = '';
+      depsSvg.innerHTML = '<defs>'+depsSvg.querySelector('defs').innerHTML+'</defs>';
+      tasks.forEach((t, idx) => {
+        const start = new Date(t.start);
+        const end = new Date(t.end);
+        const offsetDays = (start - chartStart) / (1000*60*60*24);
+        const durationDays = (end - start) / (1000*60*60*24);
+
+        const bar = document.createElement('div');
+        bar.className = 'task-bar';
+        bar.style.left = `${offsetDays * dayWidth}px`;
+        bar.style.width = `${durationDays * dayWidth}px`;
+        bar.style.top = `${idx * 30}px`;
+        bar.dataset.id = t.id;
+
+        const progress = document.createElement('div');
+        progress.className = 'progress';
+        progress.style.width = `${t.progress}%`;
+        bar.appendChild(progress);
+
+        enableDrag(bar, t);
+        barsContainer.appendChild(bar);
+      });
+
+      drawDependencies();
+      barsContainer.style.height = tasks.length*30 + 'px';
+    }
+
+    function drawDependencies() {
+      tasks.forEach(t => {
+        if (!t.dependencies) return;
+        const depId = t.dependencies;
+        const fromTask = tasks.find(x => x.id === depId);
+        if (!fromTask) return;
+        const fromBar = barsContainer.querySelector(`.task-bar[data-id="${fromTask.id}"]`);
+        const toBar = barsContainer.querySelector(`.task-bar[data-id="${t.id}"]`);
+        if (!fromBar || !toBar) return;
+        const x1 = fromBar.offsetLeft + fromBar.offsetWidth;
+        const y1 = fromBar.offsetTop + fromBar.offsetHeight/2;
+        const x2 = toBar.offsetLeft;
+        const y2 = toBar.offsetTop + toBar.offsetHeight/2;
+        const path = `M${x1} ${y1} C ${x1+20} ${y1}, ${x2-20} ${y2}, ${x2} ${y2}`;
+        const line = document.createElementNS('http://www.w3.org/2000/svg','path');
+        line.setAttribute('d', path);
+        line.setAttribute('class', 'dependency-line');
+        depsSvg.appendChild(line);
+      });
+    }
+
+    function enableDrag(bar, task) {
+      let startX, startLeft, startWidth, mode;
+      bar.addEventListener('mousedown', e => {
+        startX = e.clientX;
+        const rect = bar.getBoundingClientRect();
+        if (e.offsetX > rect.width - 5) {
+          mode = 'resize';
+          startWidth = rect.width;
+        } else {
+          mode = 'move';
+          startLeft = rect.left;
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      function onMove(e) {
+        if (mode === 'move') {
+          const dx = e.clientX - startX;
+          bar.style.left = bar.offsetLeft + dx + 'px';
+          updateTaskDates();
+          startX = e.clientX;
+        } else if (mode === 'resize') {
+          const dx = e.clientX - startX;
+          bar.style.width = startWidth + dx + 'px';
+          updateTaskDates();
+        }
+      }
+
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        drawDependencies();
+      }
+
+      function updateTaskDates() {
+        const offsetDays = Math.round(bar.offsetLeft / dayWidth);
+        const durationDays = Math.round(bar.offsetWidth / dayWidth);
+        const startDate = new Date(chartStart);
+        startDate.setDate(chartStart.getDate() + offsetDays);
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + durationDays);
+        task.start = startDate.toISOString().slice(0,10);
+        task.end = endDate.toISOString().slice(0,10);
+        renderTable();
+      }
+    }
+
+    // Zoom control
+    document.getElementById('zoom').addEventListener('input', e => {
+      dayWidth = +e.target.value;
+      renderScale();
+      renderBars();
+    });
+
+    // Persistence
+    document.getElementById('save').onclick = () => {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      alert('Saved to localStorage');
+    };
+    document.getElementById('load').onclick = () => {
+      const data = localStorage.getItem('tasks');
+      if (data) {
+        const loaded = JSON.parse(data);
+        tasks.splice(0, tasks.length, ...loaded);
+        renderTable();
+        renderBars();
+      }
+    };
+
+    renderTable();
+    renderScale();
+    renderBars();
+  </script>
+</body>
+</html>
