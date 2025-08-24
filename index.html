@@ -11,57 +11,40 @@
     <link rel="stylesheet" href="styles.css?v=1">
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <div class="logo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <span id="projectTitle">UniProject - Gantt Chart Manager</span>
+    <!-- Top Bar -->
+    <div class="toolbar" role="toolbar">
+        <div class="toolbar-left">
+            <span class="app-name">UniProject</span>
+            <span class="project-name" id="projectTitle">New Project</span>
         </div>
-        <button class="btn menu-toggle" id="menuToggle">☰</button>
-        <div class="header-actions">
-            <button class="btn" onclick="saveProject()">💾 Save</button>
-            <button class="btn" onclick="loadProject()">📂 Open</button>
-            <button class="btn" onclick="exportProject()">📤 Export</button>
-            <button class="btn btn-primary" onclick="showNewProjectModal()">➕ New Project</button>
-        </div>
-    </div>
-
-    <!-- Toolbar -->
-    <div class="toolbar">
-        <div class="toolbar-group">
-            <button class="btn btn-icon" onclick="undo()" title="Undo (Ctrl+Z)">↩️</button>
-            <button class="btn btn-icon" onclick="redo()" title="Redo (Ctrl+Y)">↪️</button>
-        </div>
-        <div class="toolbar-group">
-            <button class="btn btn-icon" onclick="addTask()" title="Add Task">➕</button>
-            <button class="btn btn-icon" onclick="deleteTask()" title="Delete Task">🗑️</button>
-            <button class="btn btn-icon" onclick="duplicateTask()" title="Duplicate Task">📋</button>
-        </div>
-        <div class="toolbar-group">
-            <button class="btn btn-icon" onclick="indentTask()" title="Indent">→</button>
-            <button class="btn btn-icon" onclick="outdentTask()" title="Outdent">←</button>
-        </div>
-        <div class="toolbar-group">
-            <button class="btn btn-icon" onclick="moveTaskUp()" title="Move Up">⬆️</button>
-            <button class="btn btn-icon" onclick="moveTaskDown()" title="Move Down">⬇️</button>
-        </div>
-        <div class="toolbar-group">
-            <button class="btn" onclick="addMilestone()">🏁 Milestone</button>
-            <button class="btn" onclick="toggleCriticalPath()">🔴 Critical Path</button>
-        </div>
-        <div class="toolbar-group zoom-controls">
-            <button class="btn btn-icon" onclick="zoomOut()" title="Zoom Out">🔍-</button>
-            <input type="range" class="zoom-slider" min="15" max="60" value="30" oninput="setZoom(this.value)">
-            <button class="btn btn-icon" onclick="zoomIn()" title="Zoom In">🔍+</button>
-        </div>
-        <div class="toolbar-group">
-            <button class="btn" onclick="autoSchedule()">⚡ Auto Schedule</button>
-            <button class="btn" onclick="showProjectSettings()">⚙️ Settings</button>
+        <div class="toolbar-right">
+            <div class="group" aria-label="Primary actions">
+                <button class="btn btn--primary" onclick="showNewProjectModal()" aria-label="New Project" title="New Project">📁 New Project</button>
+                <button class="btn" onclick="saveProject()" aria-label="Save" title="Save">💾 Save</button>
+                <button class="btn" onclick="loadProject()" aria-label="Open" title="Open">📂 Open</button>
+                <button class="btn" onclick="exportProject()" aria-label="Export" title="Export">📤 Export</button>
+            </div>
+            <div class="group" aria-label="Task group">
+                <button class="btn" onclick="addTask()" aria-label="Add Task" title="Insert a task under the selected row">➕ Add Task</button>
+                <button class="btn" onclick="deleteTask()" aria-label="Delete Task" title="Delete task">🗑️ Delete Task</button>
+                <button class="btn" onclick="indentTask()" aria-label="Indent" title="Indent">➡️ Indent</button>
+                <button class="btn" onclick="outdentTask()" aria-label="Outdent" title="Outdent">⬅️ Outdent</button>
+                <button class="btn" onclick="moveTaskUp()" aria-label="Move Up" title="Move up">⬆️ Move Up</button>
+                <button class="btn" onclick="moveTaskDown()" aria-label="Move Down" title="Move down">⬇️ Move Down</button>
+            </div>
+            <div class="group" aria-label="Schedule group">
+                <button class="btn" onclick="linkTasks()" aria-label="Link Tasks" title="Create a finish-to-start link">🔗 Link Tasks</button>
+                <button class="btn" onclick="unlinkTasks()" aria-label="Unlink Tasks" title="Remove dependency link">⛓️ Unlink Tasks</button>
+                <button class="btn" onclick="autoSchedule()" aria-label="Auto Schedule" title="Re-calculate dates from predecessors">⚡ Auto Schedule</button>
+                <button class="btn" onclick="setMilestone()" aria-label="Set Milestone" title="Change duration to 0 days">🏁 Set Milestone</button>
+                <button class="btn" onclick="toggleCriticalPath()" aria-label="Toggle Critical Path" title="Highlight tasks with zero slack">📊 Toggle Critical Path</button>
+            </div>
+            <div class="group" aria-label="View group">
+                <button class="btn" onclick="zoomOut()" aria-label="Zoom Out" title="Zoom out">➖ Zoom Out</button>
+                <button class="btn" onclick="zoomReset()" aria-label="Zoom Reset" title="Reset zoom">🔄 Zoom Reset</button>
+                <button class="btn" onclick="zoomIn()" aria-label="Zoom In" title="Zoom in">➕ Zoom In</button>
+                <button class="btn" onclick="showProjectSettings()" aria-label="Settings" title="Settings">⚙️ Settings</button>
+            </div>
         </div>
     </div>
 
@@ -77,6 +60,7 @@
                 <div>Start</div>
                 <div>Finish</div>
                 <div>Predecessors</div>
+                <div>% Complete</div>
             </div>
             <div class="task-list" id="taskList"></div>
         </div>
@@ -155,7 +139,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal('newProjectModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="createProject()">Create Project</button>
+                <button class="btn btn--primary" onclick="createProject()">Create Project</button>
             </div>
         </div>
     </div>
@@ -192,7 +176,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal('projectSettingsModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="saveProjectSettings()">Save Settings</button>
+                <button class="btn btn--primary" onclick="saveProjectSettings()">Save Settings</button>
             </div>
         </div>
     </div>
@@ -244,7 +228,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal('taskInfoModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="saveTaskInfo()">Save</button>
+                <button class="btn btn--primary" onclick="saveTaskInfo()">Save</button>
             </div>
         </div>
     </div>
@@ -259,6 +243,14 @@
         <div class="context-menu-separator"></div>
         <div class="context-menu-item" onclick="moveTaskUp()">Move Up</div>
         <div class="context-menu-item" onclick="moveTaskDown()">Move Down</div>
+    </div>
+
+    <!-- Mobile Bottom Bar -->
+    <div class="bottom-bar">
+        <button class="btn" onclick="addTask()" aria-label="Add Task" title="Insert a task under the selected row">➕ Add Task</button>
+        <button class="btn" onclick="linkTasks()" aria-label="Link Tasks" title="Create a finish-to-start link">🔗 Link Tasks</button>
+        <button class="btn" onclick="autoSchedule()" aria-label="Auto Schedule" title="Re-calculate dates from predecessors">⚡ Auto Schedule</button>
+        <button class="btn" onclick="zoomIn()" aria-label="Zoom" title="Zoom">🔍 Zoom</button>
     </div>
 
     
