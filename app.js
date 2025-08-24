@@ -18,6 +18,34 @@ let showCriticalPath = true;
 let draggedTask = null;
 let taskInfoTaskId = null;
 
+// History stacks for undo/redo
+let undoStack = [];
+let redoStack = [];
+
+function saveState() {
+    undoStack.push(JSON.stringify(project));
+    if (undoStack.length > 100) {
+        undoStack.shift();
+    }
+    redoStack.length = 0;
+}
+
+function undo() {
+    if (undoStack.length === 0) return;
+    redoStack.push(JSON.stringify(project));
+    project = JSON.parse(undoStack.pop());
+    calculateSchedule();
+    renderProject();
+}
+
+function redo() {
+    if (redoStack.length === 0) return;
+    undoStack.push(JSON.stringify(project));
+    project = JSON.parse(redoStack.pop());
+    calculateSchedule();
+    renderProject();
+}
+
 // Initialize the application
 function init() {
     const today = new Date().toISOString().split('T')[0];
@@ -25,6 +53,7 @@ function init() {
     setupEventListeners();
     createSampleProject();
     renderProject();
+    saveState();
 }
 
 function setupEventListeners() {
@@ -79,6 +108,14 @@ function setupEventListeners() {
                 case 'n':
                     e.preventDefault();
                     showNewProjectModal();
+                    break;
+                case 'z':
+                    e.preventDefault();
+                    undo();
+                    break;
+                case 'y':
+                    e.preventDefault();
+                    redo();
                     break;
             }
         }
@@ -902,8 +939,13 @@ function updateTaskField(taskId, field, value) {
         value = Math.max(0, Math.min(100, parseInt(value) || 0));
     }
 
-    // Update field
-    task[field] = value;
+    // Update field with history
+    if (task[field] !== value) {
+        saveState();
+        task[field] = value;
+    } else {
+        return;
+    }
     
     // Recalculate and re-render
     if (field === 'duration' || field === 'predecessor') {
@@ -935,7 +977,7 @@ function wouldCreateCircularDependency(taskId, newPredId) {
 function addTask() {
     let insertLevel = 0;
     let insertIndex = project.tasks.length;
-    
+
     if (selectedTaskId) {
         const selectedTask = project.tasks.find(t => t.id === selectedTaskId);
         if (selectedTask) {
@@ -943,6 +985,7 @@ function addTask() {
             insertIndex = project.tasks.findIndex(t => t.id === selectedTaskId) + 1;
         }
     }
+    saveState();
 
     const newTask = {
         id: project.nextId++,
@@ -976,6 +1019,8 @@ function addSubtask() {
     const selectedTask = project.tasks.find(t => t.id === selectedTaskId);
     if (!selectedTask) return;
 
+    saveState();
+
     // Convert to summary task if not already
     if (!selectedTask.isSummary) {
         selectedTask.isSummary = true;
@@ -1007,6 +1052,8 @@ function addSubtask() {
 // Delete selected task
 function deleteTask() {
     if (!selectedTaskId) return;
+
+    saveState();
 
     const taskIndex = project.tasks.findIndex(t => t.id === selectedTaskId);
     if (taskIndex === -1) return;
@@ -1065,6 +1112,7 @@ function duplicateTask() {
     if (!task) return;
 
     const taskIndex = project.tasks.findIndex(t => t.id === selectedTaskId);
+    saveState();
     const newTask = {
         ...task,
         id: project.nextId++,
@@ -1090,7 +1138,9 @@ function indentTask() {
 
     const task = project.tasks[taskIndex];
     const prevTask = project.tasks[taskIndex - 1];
-    
+
+    saveState();
+
     if (task.level < 3 && task.level <= prevTask.level) {
         task.level++;
         
@@ -1113,6 +1163,8 @@ function outdentTask() {
     const task = project.tasks.find(t => t.id === selectedTaskId);
     if (!task || task.level <= 0) return;
 
+    saveState();
+
     task.level--;
     updateWBS();
     calculateSchedule();
@@ -1128,14 +1180,16 @@ function moveTaskUp() {
 
     const task = project.tasks[taskIndex];
     const prevTask = project.tasks[taskIndex - 1];
-    
+
     // Only allow moving within same level or to valid positions
-    if (task.level === prevTask.level || 
+    if (task.level === prevTask.level ||
         (task.level > prevTask.level && prevTask.isSummary)) {
-        
+
+        saveState();
+
         project.tasks[taskIndex] = prevTask;
         project.tasks[taskIndex - 1] = task;
-        
+
         updateWBS();
         calculateSchedule();
         renderProject();
@@ -1154,9 +1208,10 @@ function moveTaskDown() {
     
     // Only allow moving within same level
     if (task.level === nextTask.level) {
+        saveState();
         project.tasks[taskIndex] = nextTask;
         project.tasks[taskIndex + 1] = task;
-        
+
         updateWBS();
         calculateSchedule();
         renderProject();
@@ -1165,6 +1220,8 @@ function moveTaskDown() {
 
 // Add milestone
 function addMilestone() {
+    saveState();
+
     const milestone = {
         id: project.nextId++,
         wbs: '',
@@ -1253,6 +1310,8 @@ function toggleCriticalPath() {
 
 // Auto schedule (optimize task scheduling)
 function autoSchedule() {
+    saveState();
+
     // Reset all start dates and recalculate
     project.tasks.forEach(task => {
         if (!task.isSummary) {
@@ -1260,7 +1319,7 @@ function autoSchedule() {
             task.finish = null;
         }
     });
-    
+
     calculateSchedule();
     renderProject();
     showMessage('Schedule optimized successfully', 'success');
