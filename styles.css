@@ -490,6 +490,41 @@ body {
     justify-content: flex-end;
 }
 
+#taskInfoModal .modal-content {
+    max-width: 600px;
+}
+
+.tab-buttons {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+}
+
+.tab-button.active {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    font-weight: 500;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 .progress-bar {
     height: 4px;
     background: var(--border);
