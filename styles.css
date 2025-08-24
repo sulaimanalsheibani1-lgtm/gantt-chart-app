@@ -21,7 +21,7 @@
   --sp-5: 24px;
 
   --radius: 8px;
-  --row-height: 40px;
+  --row-height: 32px;
 
   --bg: #f7f9fc;
   --surface: #ffffff;
@@ -148,7 +148,18 @@ body {
 
 .task-header {
   display: grid;
-  grid-template-columns: 50px 60px minmax(200px, 1fr) 72px 128px 128px 120px 80px;
+  grid-template-columns:
+    40px /* mode */
+    50px /* id */
+    60px /* wbs */
+    minmax(200px, 1fr) /* name */
+    72px /* duration */
+    128px /* start */
+    128px /* finish */
+    120px /* predecessors */
+    80px /* % complete */
+    100px /* constraint */
+    120px /* notes */;
   gap: 1px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -172,7 +183,18 @@ body {
 
 .task-row {
   display: grid;
-  grid-template-columns: 50px 60px minmax(200px, 1fr) 72px 128px 128px 120px 80px;
+  grid-template-columns:
+    40px
+    50px
+    60px
+    minmax(200px, 1fr)
+    72px
+    128px
+    128px
+    120px
+    80px
+    100px
+    120px;
   gap: 1px;
   background: var(--border);
   cursor: pointer;
@@ -196,6 +218,11 @@ body {
 
 .task-row.selected > div {
   background: #dbeafe;
+}
+
+/* Critical task row highlighting */
+.task-row.critical > div {
+  background: #fee2e2;
 }
 
 .task-row.summary {
@@ -251,6 +278,92 @@ body {
   overflow: hidden;
 }
 
+/* Dependency SVG layer */
+.deps-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.deps-svg path,
+.deps-svg line {
+  stroke-width: 1;
+  fill: none;
+}
+
+/* Simplified header cell for new Gantt implementation */
+.gantt-header-cell {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: var(--sp-1);
+  font-size: var(--fs-xs);
+  text-align: center;
+  position: relative;
+  user-select: none;
+}
+.gantt-header-cell.non-working {
+  background: var(--muted);
+}
+.gantt-header-cell[data-month]:before {
+  content: attr(data-month);
+  position: absolute;
+  top: -1.4em;
+  left: 0;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* New bar styles */
+.gantt-bar {
+  position: absolute;
+  background: var(--primary);
+  border-radius: 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.gantt-bar.critical {
+  background: var(--critical-path);
+}
+.baseline-bar {
+  position: absolute;
+  background: #9ca3af;
+  height: 4px;
+  border-radius: 2px;
+}
+.progress-fill {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.settings-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+  color: var(--text);
+  max-width: 400px;
+}
+.settings-modal h2 {
+  margin-bottom: var(--sp-3);
+  font-size: var(--fs-lg);
+}
+.settings-modal .form-group {
+  margin-bottom: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+.settings-modal .weekdays {
+  display: flex;
+  gap: var(--sp-2);
+}
+.settings-modal .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
 .gantt-header {
   border-bottom: 1px solid var(--border);
   background: var(--surface);
@@ -284,47 +397,7 @@ body {
   min-height: 100%;
 }
 
-.bar {
-  position: absolute;
-  height: calc(var(--row-height) - 8px);
-  background: var(--primary);
-  border-radius: 4px;
-  color: #fff;
-  font-size: var(--fs-xs);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.bar.critical {
-  background: var(--critical-path);
-}
-
-.bar.milestone {
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 14px solid var(--primary);
-  transform: translateY(calc(var(--row-height)/2 - 7px));
-}
-
-.deps-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.deps-svg path {
-  stroke: var(--text-sub);
-  stroke-width: 2;
-  fill: none;
-  marker-end: url(#arrowhead);
-}
+/* Remove old bar styles; replaced by gantt-bar classes */
 
 /* Mobile bottom bar */
 .bottom-bar {

@@ -52,6 +52,7 @@
       <!-- Task panel -->
       <section class="task-panel" aria-label="Task table">
         <div class="task-header" role="row">
+          <div role="columnheader">Mode</div>
           <div role="columnheader">ID</div>
           <div role="columnheader">WBS</div>
           <div role="columnheader">Task Name</div>
@@ -60,6 +61,8 @@
           <div role="columnheader">Finish</div>
           <div role="columnheader">Predecessors</div>
           <div role="columnheader">% Complete</div>
+          <div role="columnheader">Constraint</div>
+          <div role="columnheader">Notes</div>
         </div>
         <div class="task-list" id="taskList" role="rowgroup"></div>
       </section>
@@ -83,6 +86,45 @@
       <button id="mobileZoom" class="btn" aria-label="Adjust zoom">Zoom</button>
     </div>
 
-    <script type="module" src="app.js"></script>
+    <!-- Settings modal -->
+    <dialog id="settingsModal" aria-modal="true" class="settings-modal">
+      <form method="dialog">
+        <h2>Project settings</h2>
+        <div class="form-group">
+          <label>Working days:</label>
+          <!-- Sunday=0 .. Saturday=6 -->
+          <div class="weekdays">
+            <label><input type="checkbox" data-day="0" />Sun</label>
+            <label><input type="checkbox" data-day="1" />Mon</label>
+            <label><input type="checkbox" data-day="2" />Tue</label>
+            <label><input type="checkbox" data-day="3" />Wed</label>
+            <label><input type="checkbox" data-day="4" />Thu</label>
+            <label><input type="checkbox" data-day="5" />Fri</label>
+            <label><input type="checkbox" data-day="6" />Sat</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="hoursPerDayInput">Hours per day:</label>
+          <input type="number" id="hoursPerDayInput" min="1" max="24" />
+        </div>
+        <div class="form-group">
+          <label for="dateFormatSelect">Date format:</label>
+          <select id="dateFormatSelect">
+            <option value="dd/MM/yyyy">dd/MM/yyyy</option>
+            <option value="MM/dd/yyyy">MM/dd/yyyy</option>
+            <option value="yyyy-MM-dd">yyyy-MM-dd</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" id="showTodayInput" />Show today line</label>
+        </div>
+        <div class="form-actions">
+          <button value="cancel" type="button" id="settingsCancel">Cancel</button>
+          <button value="confirm" type="submit" id="settingsSave">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="src/main.js"></script>
   </body>
 </html>
