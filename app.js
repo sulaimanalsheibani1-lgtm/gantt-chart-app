@@ -14,9 +14,10 @@ let project = {
 
 let selectedTaskId = null;
 let zoomLevel = 30; // pixels per day
-let showCriticalPath = true;
+let showCriticalPath = false;
 let draggedTask = null;
 let taskInfoTaskId = null;
+let linkSourceId = null;
 
 // History stacks for undo/redo
 let undoStack = [];
@@ -149,17 +150,6 @@ function setupEventListeners() {
         }
     });
 
-    const menuToggle = document.getElementById('menuToggle');
-    if (menuToggle) {
-        const toolbar = document.querySelector('.toolbar');
-        const headerActions = document.querySelector('.header-actions');
-        menuToggle.addEventListener('click', () => {
-            toolbar.classList.toggle('open');
-            if (headerActions) {
-                headerActions.classList.toggle('open');
-            }
-        });
-    }
 }
 
 function createSampleProject() {
@@ -620,6 +610,21 @@ function renderTaskList() {
         }
         row.appendChild(predCell);
 
+        // Progress Cell
+        const progCell = document.createElement('div');
+        progCell.className = 'task-progress';
+        if (!task.isSummary) {
+            const progInput = document.createElement('input');
+            progInput.type = 'number';
+            progInput.min = 0;
+            progInput.max = 100;
+            progInput.value = task.progress || 0;
+            progInput.onchange = (e) => updateTaskField(task.id, 'progress', parseInt(e.target.value) || 0);
+            progInput.onclick = (e) => e.stopPropagation();
+            progCell.appendChild(progInput);
+        }
+        row.appendChild(progCell);
+
         taskList.appendChild(row);
     });
 }
@@ -850,7 +855,7 @@ function renderGanttLinks() {
                     // Add arrow
                     const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
                     arrow.setAttribute('points', `${x2},${y2} ${x2-6},${y2-3} ${x2-6},${y2+3}`);
-                    arrow.setAttribute('fill', (task.isCritical && pred.isCritical && showCriticalPath) ? 'var(--critical-path)' : 'var(--text-secondary)');
+                    arrow.setAttribute('fill', (task.isCritical && pred.isCritical && showCriticalPath) ? 'var(--critical-path)' : 'var(--text-sub)');
                     g.appendChild(arrow);
 
                     svg.appendChild(g);
@@ -1296,7 +1301,6 @@ function updateWBS() {
 function zoomIn() {
     if (zoomLevel < 60) {
         zoomLevel += 5;
-        document.querySelector('.zoom-slider').value = zoomLevel;
         renderGanttChart();
     }
 }
@@ -1304,13 +1308,12 @@ function zoomIn() {
 function zoomOut() {
     if (zoomLevel > 15) {
         zoomLevel -= 5;
-        document.querySelector('.zoom-slider').value = zoomLevel;
         renderGanttChart();
     }
 }
 
-function setZoom(value) {
-    zoomLevel = parseInt(value);
+function zoomReset() {
+    zoomLevel = 30;
     renderGanttChart();
 }
 
@@ -1335,6 +1338,54 @@ function autoSchedule() {
     calculateSchedule();
     renderProject();
     showMessage('Schedule optimized successfully', 'success');
+}
+
+// Link two tasks as predecessor-successor
+function linkTasks() {
+    if (!selectedTaskId) return;
+    if (linkSourceId === null) {
+        linkSourceId = selectedTaskId;
+        showMessage('Select the successor task to complete the link', 'info');
+        return;
+    }
+    if (selectedTaskId === linkSourceId) {
+        linkSourceId = null;
+        return;
+    }
+    const successor = project.tasks.find(t => t.id === selectedTaskId);
+    if (successor) {
+        const pred = successor.predecessor ? successor.predecessor.split(',') : [];
+        if (!pred.includes(String(linkSourceId))) {
+            pred.push(String(linkSourceId));
+            successor.predecessor = pred.join(',');
+            calculateSchedule();
+            renderProject();
+        }
+    }
+    linkSourceId = null;
+}
+
+// Remove all predecessors from selected task
+function unlinkTasks() {
+    if (!selectedTaskId) return;
+    const task = project.tasks.find(t => t.id === selectedTaskId);
+    if (task) {
+        task.predecessor = '';
+        calculateSchedule();
+        renderProject();
+    }
+}
+
+// Set current task as milestone (duration 0)
+function setMilestone() {
+    if (!selectedTaskId) return;
+    saveState();
+    const task = project.tasks.find(t => t.id === selectedTaskId);
+    if (task) {
+        task.duration = 0;
+        calculateSchedule();
+        renderProject();
+    }
 }
 
 // Modal functions
@@ -1754,7 +1805,7 @@ function showMessage(message, type = 'info') {
         top: 20px;
         right: 20px;
         padding: 12px 20px;
-        background: ${type === 'success' ? 'var(--success-color)' : 'var(--primary-color)'};
+        background: ${type === 'success' ? 'var(--ok)' : 'var(--primary)'};
         color: white;
         border-radius: 6px;
         box-shadow: var(--shadow-lg);
