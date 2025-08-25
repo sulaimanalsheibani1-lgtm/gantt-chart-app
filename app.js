@@ -23,11 +23,21 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 // level: integer indent level (0 = top level)
 // isSummary: boolean indicating summary row
 // expanded: boolean controlling whether children are visible
+function defaultSettings() {
+  return {
+    workingDays: [1, 2, 3, 4, 5],
+    hoursPerDay: 8,
+    dateFormat: 'yyyy-MM-dd',
+    showToday: true
+  };
+}
+
 let project = {
   name: 'New Project',
   startDate: new Date(),
   tasks: [],
-  nextId: 1
+  nextId: 1,
+  settings: defaultSettings()
 };
 
 // UI state
@@ -40,6 +50,15 @@ let linkSourceId = null;
 const undoStack = [];
 const redoStack = [];
 
+let autoSaveTimer = null;
+function queueAutoSave() {
+  if (typeof localStorage === 'undefined') return;
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    localStorage.setItem('ganttProject', JSON.stringify(project));
+  }, 2000);
+}
+
 /**
  * Save the current project state for undo/redo. A deep copy is pushed on
  * the undo stack and the redo stack is cleared. Limit history to 50
@@ -49,6 +68,7 @@ function saveState() {
   undoStack.push(JSON.stringify(project));
   if (undoStack.length > 50) undoStack.shift();
   redoStack.length = 0;
+  queueAutoSave();
 }
 
 /** Restore the last state from the undo stack. */
@@ -556,7 +576,15 @@ function formatDate(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  const fmt = project.settings?.dateFormat || 'yyyy-MM-dd';
+  switch (fmt) {
+    case 'dd/MM/yyyy':
+      return `${d}/${m}/${y}`;
+    case 'MM/dd/yyyy':
+      return `${m}/${d}/${y}`;
+    default:
+      return `${y}-${m}-${d}`;
+  }
 }
 
 /** Render the Gantt chart: header, bars and dependency lines. */
@@ -590,9 +618,12 @@ function renderGantt() {
   monthRow.className = 'month-row';
   const dayRow = document.createElement('div');
   dayRow.className = 'day-row';
+  const dayBgRow = document.createElement('div');
+  dayBgRow.className = 'day-bg-row';
   let current = new Date(startDate);
   let monthStartIndex = 0;
   let daysInCurrentMonth = 0;
+  const working = project.settings?.workingDays || [1, 2, 3, 4, 5];
   for (let i = 0; i < totalDays; i++) {
     const month = current.getMonth();
     const year = current.getFullYear();
@@ -611,16 +642,20 @@ function renderGantt() {
     const dayCell = document.createElement('div');
     dayCell.style.width = `${zoomLevel}px`;
     dayCell.textContent = String(current.getDate());
-    // Shade weekends
     const dayOfWeek = current.getDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      dayCell.style.background = 'var(--muted)';
+    const bgCell = document.createElement('div');
+    bgCell.style.width = `${zoomLevel}px`;
+    if (!working.includes(dayOfWeek)) {
+      dayCell.classList.add('non-working');
+      bgCell.classList.add('non-working');
     }
     dayRow.appendChild(dayCell);
+    dayBgRow.appendChild(bgCell);
     current.setDate(current.getDate() + 1);
   }
   header.appendChild(monthRow);
   header.appendChild(dayRow);
+  barsContainer.appendChild(dayBgRow);
   // Set the height of bars container based on number of visible tasks
   barsContainer.style.height = `${visibleTasks.length * parseInt(getComputedStyle(document.documentElement).getPropertyValue('--row-height'))}px`;
   // Draw bars
@@ -648,6 +683,23 @@ function renderGantt() {
   });
   // Draw dependency lines after bars are in DOM
   drawDependencies(startDate);
+
+  if (project.settings.showToday) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (today >= startDate && today <= endDate) {
+      const offsetDays = (today - startDate) / MS_PER_DAY;
+      const x = offsetDays * zoomLevel;
+      const lineHeader = document.createElement('div');
+      lineHeader.className = 'today-line';
+      lineHeader.style.left = `${x}px`;
+      header.appendChild(lineHeader);
+      const lineBody = document.createElement('div');
+      lineBody.className = 'today-line';
+      lineBody.style.left = `${x}px`;
+      body.appendChild(lineBody);
+    }
+  }
 }
 
 /** Draw dependency arrows in the SVG layer. */
@@ -761,7 +813,7 @@ function escapeCsv(str) {
 /** Reset project to a clean state. */
 function newProject() {
   if (!confirm('Discard current project and start a new one?')) return;
-  project = { name: 'New Project', startDate: new Date(), tasks: [], nextId: 1 };
+  project = { name: 'New Project', startDate: new Date(), tasks: [], nextId: 1, settings: defaultSettings() };
   selectedTaskId = null;
   saveState();
   renderAll();
@@ -784,6 +836,7 @@ function loadProject() {
     const obj = JSON.parse(data, dateReviver);
     if (obj && obj.tasks) {
       project = obj;
+      project.settings = { ...defaultSettings(), ...(project.settings || {}) };
       renumberWbs();
       calculateSchedule();
       saveState();
@@ -792,6 +845,31 @@ function loadProject() {
   } catch (err) {
     alert('Failed to load project: ' + err.message);
   }
+}
+
+function openSettings() {
+  const modal = document.getElementById('settingsModal');
+  modal.querySelectorAll('input[data-day]').forEach(cb => {
+    cb.checked = project.settings.workingDays.includes(parseInt(cb.dataset.day, 10));
+  });
+  document.getElementById('hoursPerDayInput').value = project.settings.hoursPerDay;
+  document.getElementById('dateFormatSelect').value = project.settings.dateFormat;
+  document.getElementById('showTodayInput').checked = project.settings.showToday;
+  modal.showModal();
+}
+
+function saveSettings(e) {
+  e.preventDefault();
+  const modal = document.getElementById('settingsModal');
+  project.settings.workingDays = Array.from(modal.querySelectorAll('input[data-day]'))
+    .filter(cb => cb.checked)
+    .map(cb => parseInt(cb.dataset.day, 10));
+  project.settings.hoursPerDay = parseInt(document.getElementById('hoursPerDayInput').value, 10) || 8;
+  project.settings.dateFormat = document.getElementById('dateFormatSelect').value;
+  project.settings.showToday = document.getElementById('showTodayInput').checked;
+  saveState();
+  renderAll();
+  modal.close();
 }
 
 /**
@@ -821,7 +899,9 @@ function setupEventListeners() {
   document.getElementById('zoomOutBtn').addEventListener('click', zoomOut);
   document.getElementById('zoomInBtn').addEventListener('click', zoomIn);
   document.getElementById('zoomResetBtn').addEventListener('click', zoomReset);
-  document.getElementById('settingsBtn').addEventListener('click', () => alert('Settings are not implemented yet.'));
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('settingsCancel').addEventListener('click', () => document.getElementById('settingsModal').close());
+  document.querySelector('#settingsModal form').addEventListener('submit', saveSettings);
   // Bottom bar (mobile)
   document.getElementById('mobileAddTask').addEventListener('click', addTask);
   document.getElementById('mobileLinkTasks').addEventListener('click', linkTasks);
@@ -882,6 +962,7 @@ function init() {
       // ignore corrupted storage
     }
   }
+  project.settings = { ...defaultSettings(), ...(project.settings || {}) };
   // If no tasks, create a small sample so the chart is not empty
   if (!project.tasks.length) {
     project.tasks.push(

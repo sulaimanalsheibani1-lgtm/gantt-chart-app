@@ -364,6 +364,39 @@ body {
   gap: var(--sp-2);
 }
 
+/* Calendar highlighting */
+.non-working {
+  background: var(--muted);
+}
+
+.day-bg-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.day-bg-row > div {
+  height: 100%;
+}
+
+.day-bg-row > div.non-working {
+  background: var(--muted);
+}
+
+.today-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--primary);
+  pointer-events: none;
+  z-index: 2;
+}
+
 .gantt-header {
   border-bottom: 1px solid var(--border);
   background: var(--surface);
