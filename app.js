@@ -7,8 +7,8 @@
 
 /* global document */
 
-// Constants
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+// Shared state helpers
+import { MS_PER_DAY, defaultSettings, createProject } from './src/state.js';
 
 // Project state. Tasks are stored as plain objects with the following
 // properties:
@@ -23,22 +23,8 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 // level: integer indent level (0 = top level)
 // isSummary: boolean indicating summary row
 // expanded: boolean controlling whether children are visible
-function defaultSettings() {
-  return {
-    workingDays: [1, 2, 3, 4, 5],
-    hoursPerDay: 8,
-    dateFormat: 'yyyy-MM-dd',
-    showToday: true
-  };
-}
 
-let project = {
-  name: 'New Project',
-  startDate: new Date(),
-  tasks: [],
-  nextId: 1,
-  settings: defaultSettings()
-};
+let project = createProject();
 
 // UI state
 let selectedTaskId = null;
@@ -813,7 +799,7 @@ function escapeCsv(str) {
 /** Reset project to a clean state. */
 function newProject() {
   if (!confirm('Discard current project and start a new one?')) return;
-  project = { name: 'New Project', startDate: new Date(), tasks: [], nextId: 1, settings: defaultSettings() };
+  project = createProject();
   selectedTaskId = null;
   saveState();
   renderAll();
