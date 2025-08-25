@@ -867,4 +867,4 @@ if (typeof window !== 'undefined' && window.addEventListener) {
 // Export functions for unit tests. These named exports are ignored by the
 // browser but allow Vitest to import scheduling logic without pulling in
 // DOM‑specific code. Only pure functions and state are exposed.
-export { project, calculateSchedule, renumberWbs, formatDate, MS_PER_DAY };
+export { project, calculateSchedule, renumberWbs, formatDate };
