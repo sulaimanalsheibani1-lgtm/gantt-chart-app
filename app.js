@@ -5,10 +5,11 @@
 // automatically and visualise the result in a Gantt chart. It emphasises
 // clear labelling, accessibility and performance for large data sets.
 
-/* global document */
 
-// Constants
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+// Shared state helpers
+import { MS_PER_DAY, defaultSettings, createProject } from './src/state.js';
+import { parseDuration, parsePredecessors } from './src/parse.js';
+import { calculateSchedule as runSchedule } from './src/schedule.js';
 
 // Project state. Tasks are stored as plain objects with the following
 // properties:
@@ -23,22 +24,8 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 // level: integer indent level (0 = top level)
 // isSummary: boolean indicating summary row
 // expanded: boolean controlling whether children are visible
-function defaultSettings() {
-  return {
-    workingDays: [1, 2, 3, 4, 5],
-    hoursPerDay: 8,
-    dateFormat: 'yyyy-MM-dd',
-    showToday: true
-  };
-}
 
-let project = {
-  name: 'New Project',
-  startDate: new Date(),
-  tasks: [],
-  nextId: 1,
-  settings: defaultSettings()
-};
+let project = createProject();
 
 // UI state
 let selectedTaskId = null;
@@ -58,6 +45,8 @@ function queueAutoSave() {
     localStorage.setItem('ganttProject', JSON.stringify(project));
   }, 2000);
 }
+
+saveState(); // capture initial state for undo
 
 /**
  * Save the current project state for undo/redo. A deep copy is pushed on
@@ -117,6 +106,7 @@ function addTask() {
     progress: 0,
     level,
     isSummary: false,
+    manual: false,
     expanded: true
   };
   project.tasks.splice(idx, 0, task);
@@ -316,40 +306,22 @@ function renumberWbs() {
  */
 function calculateSchedule() {
   const tasks = project.tasks;
-  const tasksById = new Map(tasks.map(t => [t.id, t]));
-  // Reset summary flags
+  // Identify summary tasks
   tasks.forEach(t => { t.isSummary = false; });
-  // Identify summary rows: a task is a summary if the next task has a higher level
   for (let i = 0; i < tasks.length; i++) {
     const t = tasks[i];
     const next = tasks[i + 1];
     t.isSummary = next && next.level > t.level;
   }
-  // Forward pass: compute earliest start/finish for non-summary tasks
+  // Parse dependencies for each task
   tasks.forEach(t => {
-    if (t.isSummary) {
-      t.start = null;
-      t.finish = null;
-      return;
-    }
-    const preds = t.predecessors ? t.predecessors.split(',').map(x => parseInt(x.trim(), 10)).filter(Boolean) : [];
-    let startDate = new Date(project.startDate);
-    for (const pid of preds) {
-      const p = tasksById.get(pid);
-      if (p && p.finish) {
-        if (p.finish > startDate) startDate = new Date(p.finish);
-      }
-    }
-    t.start = new Date(startDate);
-    t.finish = new Date(startDate);
-    t.finish.setDate(t.finish.getDate() + (t.duration || 0));
-    t.predecessorIds = preds;
+    t.dependencies = parsePredecessors(t.predecessors);
   });
-  // Propagate start/finish for summary rows
+  runSchedule(project);
+  // Propagate dates for summary rows
   for (let i = tasks.length - 1; i >= 0; i--) {
     const t = tasks[i];
     if (!t.isSummary) continue;
-    // summary's children are contiguous until a task of same or lower level
     let minStart = null;
     let maxFinish = null;
     for (let j = i + 1; j < tasks.length; j++) {
@@ -365,59 +337,6 @@ function calculateSchedule() {
     t.start = minStart;
     t.finish = maxFinish;
   }
-  // Backward pass for slack calculation on non-summary tasks
-  // Build successor lists
-  tasks.forEach(t => { t.successors = []; });
-  tasks.forEach(t => {
-    if (!t.isSummary && t.predecessorIds) {
-      t.predecessorIds.forEach(pid => {
-        const p = tasksById.get(pid);
-        if (p) p.successors.push(t.id);
-      });
-    }
-  });
-  // Determine project finish as latest finish among all leaf tasks
-  let projectFinish = null;
-  tasks.forEach(t => {
-    if (!t.isSummary && t.finish) {
-      if (!projectFinish || t.finish > projectFinish) projectFinish = new Date(t.finish);
-    }
-  });
-  tasks.forEach(t => {
-    t.latestFinish = projectFinish ? new Date(projectFinish) : null;
-  });
-  // Backwards adjust latest finish based on successors
-  let updated = true;
-  while (updated) {
-    updated = false;
-    for (const t of tasks) {
-      if (t.isSummary) continue;
-      if (!t.successors || !t.successors.length) continue;
-      let minStart = projectFinish;
-      for (const sid of t.successors) {
-        const s = tasksById.get(sid);
-        if (s && s.start && s.start < minStart) {
-          minStart = new Date(s.start);
-        }
-      }
-      if (minStart && t.latestFinish && minStart < t.latestFinish) {
-        t.latestFinish = new Date(minStart);
-        updated = true;
-      }
-    }
-  }
-  // Compute slack and critical flag
-  tasks.forEach(t => {
-    if (t.isSummary || !t.start || !t.latestFinish) {
-      t.slack = null;
-      t.isCritical = false;
-      return;
-    }
-    t.latestStart = new Date(t.latestFinish);
-    t.latestStart.setDate(t.latestStart.getDate() - (t.duration || 0));
-    t.slack = (t.latestStart - t.start) / MS_PER_DAY;
-    t.isCritical = Math.abs(t.slack) < 0.0001;
-  });
 }
 
 /**
@@ -490,11 +409,10 @@ function renderTaskList() {
       durCell.textContent = '';
     } else {
       const durInput = document.createElement('input');
-      durInput.type = 'number';
-      durInput.min = 0;
+      durInput.type = 'text';
       durInput.value = task.duration;
       durInput.addEventListener('change', () => {
-        const val = parseInt(durInput.value, 10);
+        const val = parseDuration(durInput.value);
         task.duration = isNaN(val) ? 0 : val;
         saveState();
         calculateSchedule();
@@ -621,7 +539,6 @@ function renderGantt() {
   const dayBgRow = document.createElement('div');
   dayBgRow.className = 'day-bg-row';
   let current = new Date(startDate);
-  let monthStartIndex = 0;
   let daysInCurrentMonth = 0;
   const working = project.settings?.workingDays || [1, 2, 3, 4, 5];
   for (let i = 0; i < totalDays; i++) {
@@ -681,8 +598,8 @@ function renderGantt() {
     });
     barsContainer.appendChild(bar);
   });
-  // Draw dependency lines after bars are in DOM
-  drawDependencies(startDate);
+    // Draw dependency lines after bars are in DOM
+    drawDependencies();
 
   if (project.settings.showToday) {
     const today = new Date();
@@ -702,8 +619,8 @@ function renderGantt() {
   }
 }
 
-/** Draw dependency arrows in the SVG layer. */
-function drawDependencies(startDate) {
+  /** Draw dependency arrows in the SVG layer. */
+  function drawDependencies() {
   const depsSvg = document.getElementById('depsSvg');
   depsSvg.innerHTML = '';
   // Define arrowhead marker
@@ -730,7 +647,7 @@ function drawDependencies(startDate) {
   project.tasks.forEach(t => {
     if (!isTaskVisible(t) || !t.predecessors) return;
     const succBar = barById[t.id];
-    const preds = t.predecessors.split(',').map(x => parseInt(x.trim(), 10)).filter(Boolean);
+    const preds = parsePredecessors(t.predecessors).map(p => p.id);
     preds.forEach(pid => {
       const predBar = barById[pid];
       if (!predBar || !succBar) return;
@@ -749,43 +666,6 @@ function drawDependencies(startDate) {
       depsSvg.appendChild(linkPath);
     });
   });
-}
-
-/** Export the project as a JSON file for download. */
-function exportProject() {
-  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(project));
-  const link = document.createElement('a');
-  link.setAttribute('href', dataStr);
-  link.setAttribute('download', `${project.name || 'project'}.json`);
-  link.click();
-}
-
-/** Import a project from a JSON file selected by the user. */
-function importProject() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'application/json';
-  input.addEventListener('change', () => {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const obj = JSON.parse(e.target.result, dateReviver);
-        if (obj && obj.tasks) {
-          project = obj;
-          calculateSchedule();
-          renumberWbs();
-          saveState();
-          renderAll();
-        }
-      } catch (err) {
-        alert('Failed to import project: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-  });
-  input.click();
 }
 
 /** Export the task list as CSV for external analysis. */
@@ -813,7 +693,7 @@ function escapeCsv(str) {
 /** Reset project to a clean state. */
 function newProject() {
   if (!confirm('Discard current project and start a new one?')) return;
-  project = { name: 'New Project', startDate: new Date(), tasks: [], nextId: 1, settings: defaultSettings() };
+  project = createProject();
   selectedTaskId = null;
   saveState();
   renderAll();
@@ -914,10 +794,10 @@ function setupEventListeners() {
   const resizer = document.getElementById('panelResizer');
   const container = document.querySelector('.main-container');
   let isDragging = false;
-  resizer.addEventListener('mousedown', e => {
-    isDragging = true;
-    document.body.style.cursor = 'col-resize';
-  });
+    resizer.addEventListener('mousedown', () => {
+      isDragging = true;
+      document.body.style.cursor = 'col-resize';
+    });
   document.addEventListener('mousemove', e => {
     if (!isDragging) return;
     const rect = container.getBoundingClientRect();
@@ -958,7 +838,7 @@ function init() {
   if (saved) {
     try {
       project = JSON.parse(saved, dateReviver);
-    } catch (e) {
+    } catch {
       // ignore corrupted storage
     }
   }
