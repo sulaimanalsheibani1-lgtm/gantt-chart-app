@@ -119,6 +119,10 @@ body {
   border-color: transparent;
 }
 
+.btn--primary:hover {
+  background: var(--primary-ink);
+}
+
 /* Layout */
 .main-container {
   display: grid;
@@ -131,9 +135,6 @@ body {
     display: block;
     height: auto;
     overflow: hidden;
-  }
-  .bottom-bar {
-    display: flex;
   }
 }
 
