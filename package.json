@@ -7,9 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest",
+    "test": "vitest run",
     "lint": "eslint . --ext .js",
-    "e2e": "playwright test",
+    "e2e": "cypress run",
     "format": "prettier --write ."
   },
   "dependencies": {},
@@ -18,7 +18,7 @@
     "vitest": "^1.1.0",
     "eslint": "^8.56.0",
     "prettier": "^3.2.5",
-    "playwright": "^1.40.0"
+    "cypress": "^13.6.0"
   },
   "keywords": [
     "gantt",

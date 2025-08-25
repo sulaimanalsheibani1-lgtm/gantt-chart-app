@@ -1,5 +1,7 @@
 # UniProject Gantt Chart
 
+[![CI](https://github.com/sulaimanalsheibani1-lgtm/gantt-chart-app/actions/workflows/ci.yml/badge.svg)](https://github.com/sulaimanalsheibani1-lgtm/gantt-chart-app/actions/workflows/ci.yml) [![Pages](https://img.shields.io/badge/pages-deployed-blue)](https://sulaimanalsheibani1-lgtm.github.io/gantt-chart-app/)
+
 UniProject is a lightweight Gantt chart manager inspired by Microsoft Project.  It aims to make task scheduling and progress tracking approachable for individuals and teams without requiring proprietary software.  The application runs entirely in the browser and relies only on vanilla JavaScript, CSS and HTML.
 
 ## Features

@@ -1,130 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>UniProject – Professional Gantt Chart Manager</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <!-- Application toolbar -->
-    <header class="toolbar" aria-label="Main toolbar">
-      <!-- Left section: project name -->
-      <div class="toolbar-left" id="projectTitle" aria-live="polite"></div>
-      <!-- Right section: grouped controls -->
-      <nav class="toolbar-right" aria-label="Command groups">
-        <!-- Primary commands -->
-        <div class="group" aria-label="Primary commands">
-          <button id="newProjectBtn" class="btn btn--primary" aria-label="Create new project">New Project</button>
-          <button id="saveBtn" class="btn" aria-label="Save project">Save</button>
-          <button id="openBtn" class="btn" aria-label="Open project">Open</button>
-          <button id="exportBtn" class="btn" aria-label="Export project">Export</button>
-        </div>
-        <!-- Task commands -->
-        <div class="group" aria-label="Task commands">
-          <button id="addTaskBtn" class="btn" aria-label="Add task">Add Task</button>
-          <button id="deleteTaskBtn" class="btn" aria-label="Delete selected task">Delete Task</button>
-          <button id="indentBtn" class="btn" aria-label="Indent selected task">Indent</button>
-          <button id="outdentBtn" class="btn" aria-label="Outdent selected task">Outdent</button>
-          <button id="moveUpBtn" class="btn" aria-label="Move selected task up">Move Up</button>
-          <button id="moveDownBtn" class="btn" aria-label="Move selected task down">Move Down</button>
-        </div>
-        <!-- Schedule commands -->
-        <div class="group" aria-label="Schedule commands">
-          <button id="linkBtn" class="btn" aria-label="Link tasks">Link Tasks</button>
-          <button id="unlinkBtn" class="btn" aria-label="Unlink tasks">Unlink Tasks</button>
-          <button id="autoScheduleBtn" class="btn" aria-label="Auto schedule tasks">Auto Schedule</button>
-          <button id="milestoneBtn" class="btn" aria-label="Set milestone on selected task">Set Milestone</button>
-          <button id="criticalPathBtn" class="btn" aria-label="Toggle critical path highlighting">Critical Path</button>
-        </div>
-        <!-- View commands -->
-        <div class="group" aria-label="View commands">
-          <button id="zoomOutBtn" class="btn" aria-label="Zoom out">Zoom Out</button>
-          <button id="zoomResetBtn" class="btn" aria-label="Reset zoom">Zoom Reset</button>
-          <button id="zoomInBtn" class="btn" aria-label="Zoom in">Zoom In</button>
-          <button id="settingsBtn" class="btn" aria-label="Settings">Settings</button>
-        </div>
-      </nav>
-    </header>
-
-    <!-- Main content -->
-    <div class="main-container">
-      <!-- Task panel -->
-      <section class="task-panel" aria-label="Task table">
-        <div class="task-header" role="row">
-          <div role="columnheader">Mode</div>
-          <div role="columnheader">ID</div>
-          <div role="columnheader">WBS</div>
-          <div role="columnheader">Task Name</div>
-          <div role="columnheader">Duration</div>
-          <div role="columnheader">Start</div>
-          <div role="columnheader">Finish</div>
-          <div role="columnheader">Predecessors</div>
-          <div role="columnheader">% Complete</div>
-          <div role="columnheader">Constraint</div>
-          <div role="columnheader">Notes</div>
-        </div>
-        <div class="task-list" id="taskList" role="rowgroup"></div>
-      </section>
-      <!-- Resizer between table and chart -->
-      <div id="panelResizer" class="panel-resizer" role="separator" aria-orientation="vertical" aria-label="Resize panels"></div>
-      <!-- Gantt panel -->
-      <section class="gantt-panel" aria-label="Gantt chart">
-        <div class="gantt-header" id="ganttHeader"></div>
-        <div class="gantt-body" id="ganttBody">
-          <div class="bars-container" id="barsContainer"></div>
-          <svg class="deps-svg" id="depsSvg" aria-hidden="true"></svg>
-        </div>
-      </section>
-    </div>
-
-    <!-- Mobile bottom bar -->
-    <div class="bottom-bar" id="bottomBar" aria-label="Mobile actions" hidden>
-      <button id="mobileAddTask" class="btn" aria-label="Add task">Add</button>
-      <button id="mobileLinkTasks" class="btn" aria-label="Link tasks">Link</button>
-      <button id="mobileAutoSchedule" class="btn" aria-label="Auto schedule">Auto</button>
-      <button id="mobileZoom" class="btn" aria-label="Adjust zoom">Zoom</button>
-    </div>
-
-    <!-- Settings modal -->
-    <dialog id="settingsModal" aria-modal="true" class="settings-modal">
-      <form method="dialog">
-        <h2>Project settings</h2>
-        <div class="form-group">
-          <label>Working days:</label>
-          <!-- Sunday=0 .. Saturday=6 -->
-          <div class="weekdays">
-            <label><input type="checkbox" data-day="0" />Sun</label>
-            <label><input type="checkbox" data-day="1" />Mon</label>
-            <label><input type="checkbox" data-day="2" />Tue</label>
-            <label><input type="checkbox" data-day="3" />Wed</label>
-            <label><input type="checkbox" data-day="4" />Thu</label>
-            <label><input type="checkbox" data-day="5" />Fri</label>
-            <label><input type="checkbox" data-day="6" />Sat</label>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="hoursPerDayInput">Hours per day:</label>
-          <input type="number" id="hoursPerDayInput" min="1" max="24" />
-        </div>
-        <div class="form-group">
-          <label for="dateFormatSelect">Date format:</label>
-          <select id="dateFormatSelect">
-            <option value="dd/MM/yyyy">dd/MM/yyyy</option>
-            <option value="MM/dd/yyyy">MM/dd/yyyy</option>
-            <option value="yyyy-MM-dd">yyyy-MM-dd</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label><input type="checkbox" id="showTodayInput" />Show today line</label>
-        </div>
-        <div class="form-actions">
-          <button value="cancel" type="button" id="settingsCancel">Cancel</button>
-          <button value="confirm" type="submit" id="settingsSave">Save</button>
-        </div>
-      </form>
-    </dialog>
-
-    <script type="module" src="app.js"></script>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gantt Chart App</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="toolbar" role="toolbar" aria-label="Project commands"></div>
+  <div id="grid" role="grid" aria-label="Task grid"></div>
+  <div id="gantt" aria-label="Gantt chart"></div>
+  <script type="module" src="src/main.js"></script>
+</body>
 </html>
