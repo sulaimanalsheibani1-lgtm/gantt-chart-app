@@ -6,10 +6,13 @@
   <title>Gantt Chart App</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <div id="toolbar" role="toolbar" aria-label="Project commands"></div>
-  <div id="grid" role="grid" aria-label="Task grid"></div>
-  <div id="gantt" aria-label="Gantt chart"></div>
-  <script type="module" src="src/main.js"></script>
-</body>
+  <body>
+    <div id="toolbar" role="toolbar" aria-label="Project commands"></div>
+    <div class="main-container">
+      <div id="grid" class="task-panel" role="grid" aria-label="Task grid"></div>
+      <div class="panel-resizer"></div>
+      <div id="gantt" class="gantt-panel" aria-label="Gantt chart"></div>
+    </div>
+    <script type="module" src="src/main.js"></script>
+  </body>
 </html>
